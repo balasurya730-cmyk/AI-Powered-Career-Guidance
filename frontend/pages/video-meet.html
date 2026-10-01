@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Meet — AI Learning Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+<style>
+
+  .split-layout { display: flex; gap: 24px; align-items: stretch; height: calc(100vh - 200px); }
+  .video-section { flex: 2; display: flex; flex-direction: column; gap: 20px; }
+  .ai-canvas-section { flex: 1; background: var(--pine-800); border-radius: var(--radius); border: 1px solid var(--line); display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-card); }
+  .canvas-header { padding: 20px 24px; border-bottom: 1px solid var(--line); background: var(--pine-800); display: flex; justify-content: space-between; align-items: center; }
+  .canvas-header h3 { margin: 0; color: var(--fog); font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+  .canvas-body { flex: 1; display: flex; flex-direction: column; padding: 20px; background: var(--pine-950); }
+  .notes-area { flex: 1; background: var(--pine-800); border: 1px solid var(--line); border-radius: 8px; padding: 16px; color: var(--ink); font-family: var(--font-mono); font-size: 0.9rem; overflow-y: auto; outline: none; margin-bottom: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); }
+  .notes-area:empty:before { content: attr(placeholder); color: var(--stone); }
+  .notes-area:focus { border-color: var(--trail); }
+  .ai-suggestions { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 16px; }
+  .ai-bubble { color: var(--ink); font-size: 0.95rem; line-height: 1.5; }
+  .ai-bubble strong { color: var(--moss); }
+  
+  .meet-container { display: none; } /* hide old container */
+  #jitsi-container { flex: 1; background: var(--pine-950); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow-card); }
+  .join-form { display: flex; gap: 12px; align-items: center; background: var(--pine-800); padding: 24px; border-radius: var(--radius); border: 1px solid var(--line); box-shadow: var(--shadow-card); }
+  .join-form input { flex: 1; padding: 14px 16px; border-radius: 8px; background: var(--pine-950); border: 1px solid var(--line); color: var(--fog); font-size: 1rem; }
+  .join-form input:focus { border-color: var(--trail); outline: none; }
+
+</style>
+<script src="https://meet.jit.si/external_api.js"></script>
+</head>
+<body class="page-fade">
+
+<nav class="sleek-nav">
+  <div class="nav-container">
+    <a href="dashboard.html" class="brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 20L9 6L13 15L16 9L21 20" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Trailhead
+    </a>
+    <div class="nav-links"></div>
+    <div class="nav-actions">
+      <a href="#" data-logout class="logout-link">Logout</a>
+      <button class="icon-btn" id="mobileMenuBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="sleek-mobile-menu" id="mobileMenu">
+  <div class="menu-grid">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="profile.html">Profile</a>
+    <a href="career-advisor.html">Career Advisor</a>
+    <a href="learning-planner.html">Learning Planner</a>
+    <a href="skill-gap.html">Skill Gap</a>
+    <a href="phases.html">Roadmap</a>
+    <a href="mock-interview.html">Mock Interview</a>
+    <a href="chat.html">AI Mentor</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="group-chat.html">Group Chat</a>
+    <a href="video-meet.html">Video Meet</a>
+    <a href="certificate.html">Certificate</a>
+  </div>
+</div>
+
+
+
+
+
+
+<header class="page-head">
+  <div class="container">
+    <span class="eyebrow">Connect</span>
+    <h1>Video Meetings</h1>
+    <p>Join a room to collaborate with your study group face-to-face.</p>
+  </div>
+</header>
+
+<main class="app-main">
+
+  <div class="container" style="max-width:1500px;">
+    <div class="split-layout">
+      <!-- Left: Video Meeting -->
+      <div class="video-section">
+        <div class="join-form" id="joinForm" style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; gap:12px; align-items:center;">
+            <button class="btn btn-secondary" id="btnCreateMeet" style="white-space: nowrap;">✨ Create New Meeting</button>
+            <span style="color:var(--stone); font-size:14px;">or</span>
+            <div style="display:flex; gap:8px; flex:1;">
+              <input type="text" id="roomNameInput" placeholder="Enter a meeting code or name (e.g. Study-101)" style="flex:1; margin-bottom:0;">
+              <button class="btn btn-primary" id="btnJoinMeet" style="white-space: nowrap;">Join</button>
+            </div>
+          </div>
+          <div id="newMeetInfo" style="display:none; padding:12px; background:var(--pine-800); border:1px solid var(--line); border-radius:var(--radius); font-size:14px;">
+            Your new meeting code is: <strong id="newMeetCode" style="color:var(--trail);"></strong>
+            <button class="btn btn-sm" id="btnCopyCode" style="margin-left:8px; padding:4px 8px; font-size:12px;">Copy</button>
+          </div>
+          <div id="meetError" class="form-error" style="display:none;"></div>
+        </div>
+        <div id="jitsi-container"></div>
+      </div>
+      
+      <!-- Right: AI Collaboration Canvas -->
+      <div class="ai-canvas-section" id="aiCanvas" style="display:none; opacity:0; transition: opacity 0.5s ease;">
+        <div class="canvas-header">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--moss);"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            AI Shared Canvas
+          </h3>
+          <button class="btn btn-secondary btn-sm" id="summarizeMeetBtn" style="border:1px solid var(--trail); color:var(--trail); background:transparent;">✨ Auto-Summarize</button>
+        </div>
+        <div class="canvas-body">
+          <div class="notes-area" contenteditable="true" placeholder="Start typing shared notes, or paste code snippets here. Everyone in the room sees this live!..."></div>
+          <div class="ai-suggestions">
+            <div class="ai-bubble" id="aiMeetFeedback"><strong>@ai:</strong> I'm listening in! I can automatically extract knowledge nuggets or generate a study guide when you finish the meeting.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/video-meet.js?v=2"></script>
+
+<script>
+  // Sleek Menu Toggle
+  document.addEventListener('DOMContentLoaded', () => {
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('active');
+      });
+    }
+  });
+</script>
+
+
+<script>
+  // Advanced UX logic: Show AI Canvas after joining meeting
+  document.addEventListener("DOMContentLoaded", () => {
+    const btnJoinMeet = document.getElementById("btnJoinMeet");
+    const aiCanvas = document.getElementById("aiCanvas");
+    const summarizeBtn = document.getElementById("summarizeMeetBtn");
+    const aiFeedback = document.getElementById("aiMeetFeedback");
+    
+    if(btnJoinMeet && aiCanvas) {
+      btnJoinMeet.addEventListener("click", () => {
+        setTimeout(() => {
+          aiCanvas.style.display = "flex";
+          // Trigger reflow for fade in
+          void aiCanvas.offsetWidth; 
+          aiCanvas.style.opacity = "1";
+        }, 1500);
+      });
+    }
+    
+    if(summarizeBtn && aiFeedback) {
+      summarizeBtn.addEventListener("click", async () => {
+        const notes = document.querySelector(".notes-area").innerText.trim();
+        if(!notes) {
+          aiFeedback.innerHTML = "<strong>@ai:</strong> Please write some notes in the canvas first!";
+          return;
+        }
+        
+        aiFeedback.innerHTML = "<strong>@ai:</strong> Generating meeting summary... ⏳";
+        summarizeBtn.disabled = true;
+        
+        try {
+          const data = await apiRequest("/api/meet/summarize", {
+            method: "POST",
+            body: { content: notes }
+          });
+          const htmlReply = (data.reply || "").replace(/\\n/g, "<br>");
+          aiFeedback.innerHTML = "<strong>@ai:</strong> Here's your summary:<br><br>" + htmlReply;
+        } catch (err) {
+          aiFeedback.innerHTML = "<strong>@ai:</strong> Sorry, I couldn't summarize that. " + err.message;
+        } finally {
+          summarizeBtn.disabled = false;
+        }
+      });
+    }
+  });
+</script>
+
+</body>
+</html>

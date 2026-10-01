@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — AI Learning Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body class="page-fade">
+
+<nav class="sleek-nav">
+  <div class="nav-container">
+    <a href="dashboard.html" class="brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 20L9 6L13 15L16 9L21 20" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Trailhead
+    </a>
+    <div class="nav-links"></div>
+    <div class="nav-actions">
+      <a href="#" data-logout class="logout-link">Logout</a>
+      <button class="icon-btn" id="mobileMenuBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="sleek-mobile-menu" id="mobileMenu">
+  <div class="menu-grid">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="profile.html">Profile</a>
+    <a href="career-advisor.html">Career Advisor</a>
+    <a href="learning-planner.html">Learning Planner</a>
+    <a href="skill-gap.html">Skill Gap</a>
+    <a href="phases.html">Roadmap</a>
+    <a href="mock-interview.html">Mock Interview</a>
+    <a href="chat.html">AI Mentor</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="group-chat.html">Group Chat</a>
+    <a href="video-meet.html">Video Meet</a>
+    <a href="certificate.html">Certificate</a>
+  </div>
+</div>
+
+
+
+
+
+
+<header class="page-head">
+  <div class="container">
+    <span class="eyebrow">Basecamp</span>
+    <h1>Welcome back, <span data-user-name>student</span></h1>
+    <p>Here's everything about your journey in one place.</p>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="container">
+
+    <div class="empty-state hidden" id="emptyState">
+      <h3>Let's get you set up</h3>
+      <p>Complete your student profile to unlock career recommendations and a learning plan.</p>
+      <a href="profile.html" class="btn btn-primary">Create my profile</a>
+    </div>
+
+    <div id="dashboardContent" class="hidden">
+
+      <!-- Alerts & Predictions -->
+      <div id="alertsContainer" style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 8px;"></div>
+      <div id="predictionContainer" class="hidden card" style="margin-bottom: 24px; background: rgba(59, 130, 246, 0.05); border-left: 4px solid var(--trail);">
+        <h4 style="margin: 0 0 4px 0; color: var(--trail);">AI Prediction</h4>
+        <p style="margin: 0; font-size: 0.95rem; color: var(--fog);">Estimated Time-to-Job: <strong id="timeToJobWeeks">...</strong> weeks</p>
+      </div>
+
+      <!-- Progress summary -->
+      <div class="card" style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+          <div>
+            <span class="career-meta">Overall progress</span>
+            <div class="progress-stat" style="font-size:2.5rem;"><span id="progressPercent">0</span>%</div>
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <div class="progress-track" style="height:14px;"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+            <p class="hint" style="margin-top:12px;margin-bottom:0;" id="progressSubtext">No tasks yet</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <!-- Main focus area (Checklists) -->
+        <div>
+          <div class="card hidden" id="congratsCard" style="margin-bottom: 32px;  ">
+            <h3 class="mt-0" id="congratsTitle">All Tasks Done! 🎉</h3>
+            <p id="congratsText" style="color:var(--ink); margin-bottom:14px;"></p>
+            <a href="phases.html" class="btn btn-primary" id="congratsBtn">Go to my Roadmap</a>
+          </div>
+
+          <h2 style="font-size:1.5rem; margin-bottom: 24px;">Your Learning Plan</h2>
+          <div id="planOverview"></div>
+          <div id="taskGroups"></div>
+          <div class="empty-state hidden" id="noPlanCard">
+            <h3>No learning plan yet</h3>
+            <p>Generate one to start tracking progress.</p>
+            <a href="learning-planner.html" class="btn btn-primary">Learning Planner</a>
+          </div>
+        </div>
+
+        <!-- Secondary (Career) -->
+        <div>
+          <div class="card hidden" id="careerCard">
+            <span class="career-meta">Selected career</span>
+            <h3 class="mt-0" id="careerName">—</h3>
+            <p id="careerDescription"></p>
+            <div id="careerSkills"></div>
+          </div>
+          <div class="empty-state hidden" id="noCareerCard">
+            <h3>No career selected</h3>
+            <p>Visit the Career Advisor to choose your path.</p>
+            <a href="career-advisor.html" class="btn btn-primary">Career Advisor</a>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="font-size:1.5rem; margin-top: 56px; margin-bottom: 24px;">Overview</h2>
+      <div class="dash-grid-secondary">
+        <!-- Profile -->
+        <div class="dash-sidebar">
+          <!-- Profile Card -->
+          <div class="card profile-card" id="profileCard">
+            <h3 id="dashName"></h3>
+            <p id="dashEdu"></p>
+            <div style="margin-bottom: 16px;">
+              <span class="hint" style="font-size: 0.8rem; display: block; margin-bottom: 4px;">Share this ID so others can find you (this is not a room code):</span>
+              <strong id="dashStudentCode" style="color: var(--trail); font-family: var(--font-mono); font-size: 1rem;">—</strong>
+              <button id="btnCopyStudentCode" class="btn btn-sm" style="margin-left: 8px; padding: 2px 6px; font-size: 0.75rem;">Copy</button>
+            </div>
+            <a href="profile.html" class="btn btn-secondary">Edit Profile</a>
+            <button id="btnExportResume" class="btn btn-secondary" style="margin-top: 8px;">Export Resume (AI)</button>
+            <button id="btnSharePortfolio" class="btn btn-secondary" style="margin-top: 8px;">Share Portfolio</button>
+          </div>
+
+          <!-- Find Peers -->
+          <div class="card" style="margin-top: 24px;">
+            <h3 style="margin-top:0;">Find Peers</h3>
+            <p class="hint">Search for a student using their Student ID.</p>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="peerSearchInput" placeholder="e.g. STU-A1B2C3D4" style="flex-grow: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--pine-700); background: var(--pine-900); color: var(--fog);">
+              <button class="btn btn-primary btn-sm" id="btnSearchPeer">Find</button>
+            </div>
+            <div id="peerSearchResult" style="margin-top: 12px; font-size: 0.9rem;"></div>
+          </div>
+        </div>
+
+        <!-- Streaks -->
+        <div class="card" id="streakCard">
+          <span class="career-meta">Streaks & Achievements</span>
+          <div style="display:flex;align-items:center;gap:15px;margin-top:10px;margin-bottom:15px;">
+            <div style="font-size:2.5rem;display:flex;align-items:center;justify-content:center;border-radius:50%;width:64px;height:64px;">
+              🔥
+            </div>
+            <div>
+              <div style="font-size:1.4rem;font-weight:600;color:var(--trail);line-height:1.2;" id="currentStreakVal">0 days</div>
+              <div class="hint" style="margin:0;">Current study streak (longest: <span id="longestStreakVal">0</span> days)</div>
+            </div>
+          </div>
+          <p style="font-weight:500;margin-bottom:8px;font-size:0.9rem;color:var(--ink);">Your Badges</p>
+          <div id="badgesContainer" style="display:flex;flex-wrap:wrap;gap:8px;">
+            <span class="hint">Earn streaks and complete phases to unlock badges!</span>
+          </div>
+        </div>
+
+        <!-- Collaborate -->
+        <div class="card">
+          <span class="career-meta">Collaborate</span>
+          <h3 class="mt-0">Study Groups</h3>
+          <p>Connect with peers and learn together.</p>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <a href="group-chat.html" class="btn btn-secondary btn-sm" style="flex:1;">Group Chat</a>
+            <a href="video-meet.html" class="btn btn-secondary btn-sm" style="flex:1;">Video Meet</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+<script>
+  // Hamburger Menu Logic
+  const menuToggle = document.getElementById('menuToggle');
+  const sideDrawer = document.getElementById('sideDrawer');
+
+  if (menuToggle && sideDrawer) {
+    menuToggle.addEventListener('click', () => {
+      menuToggle.classList.toggle('active');
+      sideDrawer.classList.toggle('open');
+    });
+  }
+
+  // Close drawer if clicking outside (optional, but good UX)
+  document.addEventListener('click', (e) => {
+    if (!sideDrawer.contains(e.target) && !menuToggle.contains(e.target) && sideDrawer.classList.contains('open')) {
+      menuToggle.classList.remove('active');
+      sideDrawer.classList.remove('open');
+    }
+  });
+
+  // Ripple Effect for Menu Links
+  const menuLinks = sideDrawer.querySelectorAll('a');
+  menuLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+      if (this.hasAttribute('data-logout')) return; // let api.js handle logout default
+      
+      const rect = this.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const ripple = document.createElement('span');
+      ripple.classList.add('ripple-element');
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      
+      this.appendChild(ripple);
+      
+      setTimeout(() => {
+        ripple.remove();
+      }, 600);
+    });
+  });
+</script>
+
+<script>
+  // Sleek Menu Toggle
+  document.addEventListener('DOMContentLoaded', () => {
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('active');
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
+

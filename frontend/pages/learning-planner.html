@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Planner — AI Learning Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body class="page-fade">
+
+<nav class="sleek-nav">
+  <div class="nav-container">
+    <a href="dashboard.html" class="brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 20L9 6L13 15L16 9L21 20" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Trailhead
+    </a>
+    <div class="nav-links"></div>
+    <div class="nav-actions">
+      <a href="#" data-logout class="logout-link">Logout</a>
+      <button class="icon-btn" id="mobileMenuBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="sleek-mobile-menu" id="mobileMenu">
+  <div class="menu-grid">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="profile.html">Profile</a>
+    <a href="career-advisor.html">Career Advisor</a>
+    <a href="learning-planner.html">Learning Planner</a>
+    <a href="skill-gap.html">Skill Gap</a>
+    <a href="phases.html">Roadmap</a>
+    <a href="mock-interview.html">Mock Interview</a>
+    <a href="chat.html">AI Mentor</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="group-chat.html">Group Chat</a>
+    <a href="video-meet.html">Video Meet</a>
+    <a href="certificate.html">Certificate</a>
+  </div>
+</div>
+
+
+
+
+
+
+<header class="page-head">
+  <div class="container">
+    <span class="eyebrow">Waypoint 3</span>
+    <h1>AI Learning Planner</h1>
+    <p>Your personalized trail map, generated from your career choice and available study time.</p>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="container" style="max-width:820px;">
+
+    <!-- No career selected yet -->
+    <div class="empty-state hidden" id="noCareerState">
+      <h3>No career selected yet</h3>
+      <p>Visit the Career Advisor first to pick the career you want a plan for.</p>
+      <a href="career-advisor.html" class="btn btn-primary">Go to Career Advisor</a>
+    </div>
+
+    <!-- Career known, plan not generated -->
+    <div class="card hidden" id="generateCard">
+      <span class="career-meta">Selected career</span>
+      <h3 class="mt-0" id="careerNameText"></h3>
+      <p>Ready to build your daily, weekly, and monthly learning trail for this career?</p>
+      <div class="form-error" id="errorBanner"></div>
+      <button class="btn btn-primary" id="generateBtn">Generate my learning plan</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="card text-center hidden" id="loadingCard">
+      <span class="spinner spinner-dark"></span>
+      <p style="margin-top:14px;">Gemini is building your personalized trail map...</p>
+    </div>
+
+    <!-- Plan display -->
+    <div id="planWrap" class="hidden">
+      <div class="card" style="margin-bottom:24px;">
+        <span class="career-meta">Learning plan for</span>
+        <h3 class="mt-0" id="planCareerName"></h3>
+        <button class="btn btn-secondary" id="regenerateBtn" style="margin-top:8px;">Regenerate plan</button>
+      </div>
+
+      <div class="trail trail-light" id="planTrail" style="margin:0 0 32px;"></div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <span class="career-meta">Daily study plan</span>
+        <ul id="dailyList" class="mt-0"></ul>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <span class="career-meta">Weekly study plan</span>
+        <ul id="weeklyList" class="mt-0"></ul>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <span class="career-meta">Monthly learning roadmap</span>
+        <ul id="monthlyList" class="mt-0"></ul>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <span class="career-meta">Skills to learn</span>
+        <div id="skillsChips" style="margin-top:8px;"></div>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <span class="career-meta">Free learning resources</span>
+        <ul id="resourcesList" class="mt-0"></ul>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <span class="career-meta">Practice project</span>
+        <p id="practiceProjectText" class="mt-0" style="color:var(--ink);"></p>
+      </div>
+
+      <a href="dashboard.html" class="btn btn-primary btn-block">View my dashboard</a>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/planner.js"></script>
+
+<script>
+  // Sleek Menu Toggle
+  document.addEventListener('DOMContentLoaded', () => {
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('active');
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
+

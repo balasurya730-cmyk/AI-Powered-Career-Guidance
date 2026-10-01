@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Group Chat — AI Learning Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+<style>
+
+  .group-container { display: flex; gap: 24px; align-items: stretch; height: calc(100vh - 180px); }
+  .group-list { width: 300px; background: var(--pine-800); padding: 24px; border-radius: var(--radius); border: 1px solid var(--line); display: flex; flex-direction: column; }
+  .group-list ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1; }
+  .group-list li { padding: 14px 16px; cursor: pointer; border-radius: 8px; margin-bottom: 8px; transition: all 0.2s ease; font-weight: 500; color: var(--stone); background: transparent; }
+  .group-list li:hover { background: var(--pine-700); color: var(--fog); }
+  .group-list li.active { background: var(--trail); color: var(--fog); box-shadow: var(--shadow-card); }
+  .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--pine-800); padding: 0; border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; }
+  .chat-header { padding: 20px 24px; border-bottom: 1px solid var(--line); background: var(--pine-800); display: flex; justify-content: space-between; align-items: center; }
+  .chat-window { flex: 1; overflow-y: auto; padding: 24px; background: var(--pine-950); display: flex; flex-direction: column; }
+  .chat-empty { text-align: center; color: var(--stone); margin: auto; }
+  .chat-message { margin-bottom: 16px; padding: 14px 18px; border-radius: 18px; max-width: 75%; line-height: 1.5; font-size: 0.95rem; }
+  .chat-message.me { background: var(--trail); color: var(--fog); margin-left: auto; border-bottom-right-radius: 4px; box-shadow: 0 4px 12px rgba(49,104,232,0.2); }
+  .chat-message.me .msg-sender { display: none; }
+  .chat-message.me .msg-text { color: var(--fog); }
+  .chat-message.other { background: var(--pine-700); color: var(--ink); border-bottom-left-radius: 4px; }
+  .chat-message.ai { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--ink); border-bottom-left-radius: 4px; }
+  .msg-sender { font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--stone); text-transform: uppercase; letter-spacing: 0.5px; }
+  .msg-text { font-size: 0.95rem; color: var(--ink); white-space: pre-wrap; }
+  .create-group-form { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .create-group-form h4 { margin-bottom: 12px; font-size: 1rem; color: var(--fog); }
+  .create-group-form input { width: 100%; margin-bottom: 12px; padding: 10px 14px; border-radius: 8px; background: var(--pine-950); border: 1px solid var(--line); color: var(--fog); }
+  .chat-input-row { padding: 20px 24px; background: var(--pine-800); border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-end; }
+  .chat-input-row textarea { flex: 1; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--pine-950); color: var(--fog); resize: none; max-height: 120px; min-height: 52px; font-family: var(--font-body); }
+  .chat-input-row textarea:focus { border-color: var(--trail); outline: none; }
+  .chat-input-row button { padding: 12px 24px; height: 52px; font-weight: 600; }
+  #groupsUl h3 { color: var(--fog); margin-bottom: 16px; font-size: 1.1rem; margin-top:0; }
+
+</style>
+</head>
+<body class="page-fade">
+
+<nav class="sleek-nav">
+  <div class="nav-container">
+    <a href="dashboard.html" class="brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 20L9 6L13 15L16 9L21 20" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Trailhead
+    </a>
+    <div class="nav-links"></div>
+    <div class="nav-actions">
+      <a href="#" data-logout class="logout-link">Logout</a>
+      <button class="icon-btn" id="mobileMenuBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="sleek-mobile-menu" id="mobileMenu">
+  <div class="menu-grid">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="profile.html">Profile</a>
+    <a href="career-advisor.html">Career Advisor</a>
+    <a href="learning-planner.html">Learning Planner</a>
+    <a href="skill-gap.html">Skill Gap</a>
+    <a href="phases.html">Roadmap</a>
+    <a href="mock-interview.html">Mock Interview</a>
+    <a href="chat.html">AI Mentor</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="group-chat.html">Group Chat</a>
+    <a href="video-meet.html">Video Meet</a>
+    <a href="certificate.html">Certificate</a>
+  </div>
+</div>
+
+
+
+
+
+
+<header class="page-head">
+  <div class="container">
+    <span class="eyebrow">Collaborate</span>
+    <h1>Group AI Chat</h1>
+    <p>Join a group to study with peers. Mention <strong>@ai</strong> to ask the AI Mentor a question!</p>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="container group-container">
+    
+    <div class="group-list">
+      <div id="groupsError" class="form-error" style="display:none;"></div>
+      <h3>Groups</h3>
+      <ul id="groupsUl">
+        <li>Loading groups...</li>
+      </ul>
+      <button id="refreshGroupsBtn" class="btn btn-secondary" style="width:100%; display:none; margin-top:8px;">Refresh groups</button>
+      
+      <div class="create-group-form">
+        <h4>Create New Group</h4>
+        <input type="text" id="newGroupName" placeholder="Group Name">
+        <button class="btn btn-secondary btn-sm" id="btnCreateGroup" style="width:100%;">Create</button>
+      </div>
+    </div>
+    
+    <div class="chat-area" id="chatArea" style="display:none;">
+      <div class="chat-header">
+        <h3 id="currentGroupName" style="margin-top:0; color: var(--fog);">Select a group</h3>
+        
+<div style="display:flex; gap:12px;">
+  <button id="catchMeUpBtn" class="btn btn-secondary btn-sm" style="background:var(--trail); color:white; border:none; display:flex; align-items:center; gap:6px;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    Catch Me Up
+  </button>
+  <button id="reconnectBtn" class="btn btn-secondary" style="display:none;">Reconnect</button>
+</div>
+
+      </div>
+      <div class="form-error" id="errorBanner"></div>
+
+      <div class="chat-window" id="chatWindow">
+        <div class="chat-empty" id="chatEmpty">
+          No messages yet. Say hi!
+        </div>
+      </div>
+
+      <form id="chatForm" class="chat-input-row">
+        <textarea id="chatInput" placeholder="Type a message... (use @ai to ask the AI)" required></textarea>
+        <button type="submit" class="btn btn-primary" id="chatSendBtn">Send</button>
+      </form>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/group-chat.js"></script>
+
+<script>
+  // Sleek Menu Toggle
+  document.addEventListener('DOMContentLoaded', () => {
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('active');
+      });
+    }
+  });
+</script>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const catchBtn = document.getElementById("catchMeUpBtn");
+    const chatWindow = document.getElementById("chatWindow");
+    
+    if(catchBtn && chatWindow) {
+      catchBtn.addEventListener("click", () => {
+        const aiMsg = document.createElement("div");
+        aiMsg.className = "chat-message ai";
+        aiMsg.innerHTML = `
+          <div class="msg-sender">@ai mentor</div>
+          <div class="msg-text">✨ <strong>Here is what you missed:</strong><br><br>- The group discussed SQL vs NoSQL databases.<br>- Alice shared a great link on MongoDB indexing.<br>- We scheduled the next mock interview for Friday.</div>
+        `;
+        chatWindow.appendChild(aiMsg);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        
+        // Hide button after use
+        catchBtn.style.display = "none";
+      });
+      
+      // Initially hide button until a group is clicked
+      catchBtn.style.display = "none";
+      
+      // Listen for group clicks (hacky way to bind to existing logic)
+      document.getElementById("groupsUl").addEventListener("click", (e) => {
+        if(e.target.tagName === 'LI') {
+          catchBtn.style.display = "flex";
+        }
+      });
+    }
+  });
+</script>
+
+</body>
+</html>

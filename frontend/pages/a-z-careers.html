@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A-Z Career Directory — Trailhead</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+<style>
+  .directory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 24px;
+  }
+  .career-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .career-card h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: var(--trail);
+  }
+  .career-card p {
+    font-size: 0.95rem;
+    color: var(--fog);
+    margin-bottom: 16px;
+    flex-grow: 1;
+  }
+  .skills-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .skills-tags span {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--trail);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+  }
+  .search-bar {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--pine-700);
+    background: var(--pine-900);
+    color: var(--fog);
+    font-size: 1rem;
+    margin-bottom: 24px;
+    transition: border-color 0.2s;
+  }
+  .search-bar:focus {
+    outline: none;
+    border-color: var(--trail);
+  }
+</style>
+</head>
+<body class="page-fade">
+
+<nav class="sleek-nav">
+  <div class="nav-container">
+    <a href="dashboard.html" class="brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 20L9 6L13 15L16 9L21 20" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Trailhead
+    </a>
+    <div class="nav-links"></div>
+    <div class="nav-actions">
+      <a href="#" data-logout class="logout-link">Logout</a>
+      <button class="icon-btn" id="mobileMenuBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="sleek-mobile-menu" id="mobileMenu">
+  <div class="menu-grid">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="profile.html">Profile</a>
+    <a href="career-advisor.html">Career Advisor</a>
+    <a href="a-z-careers.html">A-Z Careers</a>
+    <a href="learning-planner.html">Learning Planner</a>
+    <a href="skill-gap.html">Skill Gap</a>
+    <a href="phases.html">Roadmap</a>
+    <a href="mock-interview.html">Mock Interview</a>
+    <a href="chat.html">AI Mentor</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="group-chat.html">Group Chat</a>
+    <a href="video-meet.html">Video Meet</a>
+    <a href="certificate.html">Certificate</a>
+  </div>
+</div>
+
+<header class="page-head">
+  <div class="container">
+    <span class="eyebrow">Explore</span>
+    <h1>A-Z Career Directory</h1>
+    <p>Browse our comprehensive list of career paths. Find your calling and let AI plan your journey.</p>
+    <a href="dashboard.html" class="btn btn-primary" style="margin-top: 16px; display: inline-block;">Go to Directory</a>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="container">
+    
+    <input type="text" id="searchInput" class="search-bar" placeholder="Search for a career or skill...">
+    
+    <div id="loadingIndicator" style="text-align: center; margin: 40px 0;">
+      <div class="spinner" style="margin:0 auto;"></div>
+      <p style="margin-top: 16px; color: var(--fog);">Loading directory...</p>
+    </div>
+
+    <div id="directoryGrid" class="directory-grid hidden">
+      <!-- Cards rendered here by JS -->
+    </div>
+    
+    <div id="noResultsMsg" class="hidden" style="text-align: center; margin: 40px 0; color: var(--fog);">
+      <p>No careers found matching your search.</p>
+      <div style="margin-top: 16px;">
+        <p>Don't see what you're looking for?</p>
+        <button id="btnGenerateCareer" class="btn btn-primary" style="margin-top: 8px;">✨ Generate AI Profile for this Career</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/a-z-careers.js?v=2"></script>
+</body>
+</html>

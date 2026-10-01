@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Portfolio — AI Learning Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  .portfolio-header { text-align: center; padding: 40px 0; border-bottom: 1px solid var(--border-subtle); }
+  .portfolio-section { margin-top: 32px; }
+</style>
+</head>
+<body class="page-fade" style="background: var(--bg-alt);">
+
+<main class="app-main">
+  <div class="container" style="max-width: 800px; background: var(--surface); padding: 40px; border-radius: 12px; margin-top: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+    <div id="portfolioContent" class="hidden">
+      <header class="portfolio-header">
+        <h1 id="pName" style="font-size: 2.5rem; margin-bottom: 8px;"></h1>
+        <p id="pMeta" style="color: var(--ink); font-size: 1.1rem;"></p>
+        <div id="pSkills" style="margin-top: 16px;"></div>
+      </header>
+
+      <section class="portfolio-section">
+        <h3 class="mt-0" style="color: var(--fog);">About</h3>
+        <p id="pInterests"></p>
+      </section>
+
+      <section class="portfolio-section" id="badgesSection" class="hidden">
+        <h3 class="mt-0" style="color: var(--fog);">Achievements</h3>
+        <div id="pBadges" style="display: flex; gap: 12px; flex-wrap: wrap;"></div>
+      </section>
+    </div>
+
+    <div id="errorState" class="hidden text-center" style="padding: 60px 0;">
+      <h3>Portfolio Not Found</h3>
+      <p class="hint">This portfolio doesn't exist or is set to private.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const parts = window.location.pathname.split("/");
+  const username = parts[parts.length - 1]; // e.g. /portfolio/johndoe
+  
+  try {
+    const res = await fetch(`/portfolio/${username}`);
+    if (!res.ok) throw new Error("Not found");
+    const data = await res.json();
+    
+    document.getElementById("portfolioContent").classList.remove("hidden");
+    document.getElementById("pName").textContent = data.name;
+    if (data.profile) {
+      document.getElementById("pMeta").textContent = `${data.profile.education} • ${data.profile.college}`;
+      document.getElementById("pInterests").textContent = `Goal: ${data.profile.career_goal || 'Not set'}. Interests: ${data.profile.interests}`;
+      
+      const skills = data.profile.skills ? data.profile.skills.split(",") : [];
+      document.getElementById("pSkills").innerHTML = skills.map(s => `<span class="skill-chip">${s.trim()}</span>`).join("");
+    }
+    
+    if (data.badges && data.badges.length) {
+      document.getElementById("pBadges").innerHTML = data.badges.map(b => `
+        <div class="card" style="padding: 12px; text-align: center; width: 120px;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">🏅</div>
+          <div style="font-size: 0.9rem; font-weight: 600; color: var(--fog);">${b.badge_name}</div>
+        </div>
+      `).join("");
+    }
+    
+  } catch (err) {
+    document.getElementById("errorState").classList.remove("hidden");
+  }
+});
+</script>
+</body>
+</html>

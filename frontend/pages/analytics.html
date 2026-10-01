@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — AI Learning Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="page-fade">
+
+<nav class="sleek-nav">
+  <div class="nav-container">
+    <a href="dashboard.html" class="brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 20L9 6L13 15L16 9L21 20" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Trailhead
+    </a>
+    <div class="nav-links"></div>
+    <div class="nav-actions">
+      <a href="#" data-logout class="logout-link">Logout</a>
+      <button class="icon-btn" id="mobileMenuBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="sleek-mobile-menu" id="mobileMenu">
+  <div class="menu-grid">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="profile.html">Profile</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="career-advisor.html">Career Advisor</a>
+    <a href="learning-planner.html">Learning Planner</a>
+    <a href="skill-gap.html">Skill Gap</a>
+    <a href="phases.html">Roadmap</a>
+    <a href="mock-interview.html">Mock Interview</a>
+    <a href="chat.html">AI Mentor</a>
+    <a href="leaderboard.html">Leaderboard</a>
+    <a href="group-chat.html">Group Chat</a>
+    <a href="video-meet.html">Video Meet</a>
+    <a href="certificate.html">Certificate</a>
+  </div>
+</div>
+
+<header class="page-head">
+  <div class="container">
+    <span class="eyebrow">Insights</span>
+    <h1>Your Learning Analytics</h1>
+    <p>Visualize your progress, skill acquisition, and study trends.</p>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="container">
+
+    <div class="empty-state hidden" id="noDataState">
+      <h3>No data yet</h3>
+      <p>Start a learning plan and complete some tasks to see your analytics here.</p>
+      <a href="learning-planner.html" class="btn btn-primary">Go to Learning Planner</a>
+    </div>
+
+    <div id="analyticsContent" class="hidden">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
+        
+        <!-- Line Chart: Study Trends -->
+        <div class="card">
+          <h3 class="mt-0" style="margin-bottom: 16px;">Study Trends (Last 7 Days)</h3>
+          <canvas id="trendsChart" width="400" height="250"></canvas>
+        </div>
+
+        <!-- Doughnut Chart: Phase Progress -->
+        <div class="card">
+          <h3 class="mt-0" style="margin-bottom: 16px;">Roadmap Progress</h3>
+          <canvas id="progressChart" width="400" height="250"></canvas>
+        </div>
+
+        <!-- Radar Chart: Skills -->
+        <div class="card">
+          <h3 class="mt-0" style="margin-bottom: 16px;">Skill Mastery vs Requirements</h3>
+          <canvas id="skillsChart" width="400" height="250"></canvas>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/analytics.js"></script>
+
+<script>
+  // Sleek Menu Toggle
+  document.addEventListener('DOMContentLoaded', () => {
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('active');
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
