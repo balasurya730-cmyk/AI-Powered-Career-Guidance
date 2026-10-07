@@ -84,6 +84,11 @@ async function selectGroup(group) {
     currentGroupId = group.id;
     currentGroupName.textContent = group.name;
     chatArea.style.display = "flex";
+
+    // Show the Catch Me Up button when a group is selected
+    const catchMeUpBtn = document.getElementById("catchMeUpBtn");
+    if (catchMeUpBtn) catchMeUpBtn.style.display = "flex";
+
     loadGroups(); // to update active state
     
     try {
@@ -185,14 +190,32 @@ if (reconnectBtn) {
     });
 }
 
-if (btnCatchMeUp) {
-    btnCatchMeUp.addEventListener('click', (e) => {
+const catchMeUpBtn = document.getElementById("catchMeUpBtn");
+if (catchMeUpBtn) {
+    // Hide initially until a group is joined
+    catchMeUpBtn.style.display = "none";
+    catchMeUpBtn.addEventListener('click', (e) => {
         e.preventDefault();
         if (!ws || ws.readyState !== WebSocket.OPEN) {
-            errorBanner.textContent = "Not connected to chat.";
+            errorBanner.textContent = "Not connected to chat. Please wait...";
             return;
         }
-        ws.send("@ai catch me up");
+        // Show loading state
+        catchMeUpBtn.disabled = true;
+        catchMeUpBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Summarizing...
+        `;
+        // Send to AI via WebSocket — backend detects @ai + summarize keywords
+        ws.send("@ai catch me up — summarize all the recent messages in this group chat into short bullet points");
+        // Re-enable button after 5 seconds
+        setTimeout(() => {
+            catchMeUpBtn.disabled = false;
+            catchMeUpBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Catch Me Up
+            `;
+        }, 5000);
     });
 }
 

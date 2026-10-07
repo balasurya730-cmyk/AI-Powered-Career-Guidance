@@ -151,38 +151,7 @@
 </script>
 
 
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const catchBtn = document.getElementById("catchMeUpBtn");
-    const chatWindow = document.getElementById("chatWindow");
-    
-    if(catchBtn && chatWindow) {
-      catchBtn.addEventListener("click", () => {
-        const aiMsg = document.createElement("div");
-        aiMsg.className = "chat-message ai";
-        aiMsg.innerHTML = `
-          <div class="msg-sender">@ai mentor</div>
-          <div class="msg-text">✨ <strong>Here is what you missed:</strong><br><br>- The group discussed SQL vs NoSQL databases.<br>- Alice shared a great link on MongoDB indexing.<br>- We scheduled the next mock interview for Friday.</div>
-        `;
-        chatWindow.appendChild(aiMsg);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-        
-        // Hide button after use
-        catchBtn.style.display = "none";
-      });
-      
-      // Initially hide button until a group is clicked
-      catchBtn.style.display = "none";
-      
-      // Listen for group clicks (hacky way to bind to existing logic)
-      document.getElementById("groupsUl").addEventListener("click", (e) => {
-        if(e.target.tagName === 'LI') {
-          catchBtn.style.display = "flex";
-        }
-      });
-    }
-  });
-</script>
+
 
 </body>
 </html>

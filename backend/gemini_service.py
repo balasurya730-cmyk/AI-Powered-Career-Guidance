@@ -1064,8 +1064,13 @@ def chat_with_ai(prompt: str, history: list) -> dict:
         raw = _call_gemini_with_hard_timeout(full_prompt)
         return {"reply": raw.strip()}
     except Exception as e:
-        print(f"[gemini_service] chat_with_ai failed: {e}. Falling back to mock generator.")
-        return {"reply": _get_mock_chat_reply(prompt, None)}
+        print(f"[gemini_service] chat_with_ai failed: {e}. Retrying via chat_reply fallback.")
+        try:
+            reply = chat_reply(prompt)
+            return {"reply": reply}
+        except Exception as e2:
+            print(f"[gemini_service] chat_with_ai fallback also failed: {e2}.")
+            return {"reply": "⚠️ AI is temporarily unavailable. Please try again in a moment!"}
 
 def summarize_meeting(content: str) -> str:
     if len(content.strip()) < 5:
