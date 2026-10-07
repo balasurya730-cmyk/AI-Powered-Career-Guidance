@@ -9,7 +9,7 @@ def get_routing_chain(feature: str) -> list[dict]:
         "provider": "gemini",
         "url": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
         "api_key": os.getenv("GEMINI_API_KEY"),
-        "model": os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+        "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
     }
     
     chain = []
