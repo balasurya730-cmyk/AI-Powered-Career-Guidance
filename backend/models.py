@@ -212,6 +212,32 @@ class ProgressItem(BaseModel):
     task_name: str
     task_type: str
     is_completed: bool
+    status: str = "locked"
+    questions: Optional[str] = None
+    answers: Optional[str] = None
+    score: int = 0
+
+class TaskQuestion(BaseModel):
+    question: str
+    type: str # 'theory' | 'coding'
+    options: Optional[List[str]] = None # Optional multiple choice options
+
+class TaskStartResponse(BaseModel):
+    id: int
+    task_name: str
+    questions: List[TaskQuestion]
+
+class TaskAnswer(BaseModel):
+    answer: str
+
+class TaskSubmitRequest(BaseModel):
+    answers: List[TaskAnswer]
+
+class TaskSubmitResponse(BaseModel):
+    success: bool
+    score: int
+    feedback: str
+    next_task_unlocked: bool
 
 
 # ---------------- DASHBOARD ----------------
@@ -311,6 +337,20 @@ class ProjectSubmissionResponse(BaseModel):
     ai_score: int
     submitted_at: str
     file_name: Optional[str] = None
+
+
+class PracticeProjectSubmitRequest(BaseModel):
+    submission_type: str = Field(..., pattern="^(code|link)$")
+    content: str = Field(..., min_length=1, max_length=20000)
+
+
+class PracticeProjectSubmissionResponse(BaseModel):
+    id: int
+    status: str
+    ai_summary: str
+    ai_errors: List[ProjectError]
+    ai_score: int
+    next_task_unlocked: bool
 
 
 # ---------------- PROCTORED PHASE TEST ----------------

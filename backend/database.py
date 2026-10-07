@@ -122,10 +122,33 @@ def init_db():
             phase_id INTEGER,        -- NULL for legacy/non-phased tasks
             due_date TEXT,           -- ISO date string; used by the deadline-alert job
             notified INTEGER DEFAULT 0,  -- prevents duplicate overdue notifications
+            status TEXT DEFAULT 'locked',
+            questions TEXT,          -- JSON array of AI generated questions
+            answers TEXT,            -- JSON array of user submitted answers
+            score INTEGER DEFAULT 0,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (learning_plan_id) REFERENCES learning_plans(id) ON DELETE CASCADE
         )
     """)
+
+    # Migration for existing databases
+    try:
+        cur.execute("ALTER TABLE progress ADD COLUMN status TEXT DEFAULT 'locked'")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("ALTER TABLE progress ADD COLUMN questions TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("ALTER TABLE progress ADD COLUMN answers TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cur.execute("ALTER TABLE progress ADD COLUMN score INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+
 
     # ---------- PHASES (multi-month roadmap: Basics -> Intermediate -> Advanced ...) ----------
     cur.execute("""

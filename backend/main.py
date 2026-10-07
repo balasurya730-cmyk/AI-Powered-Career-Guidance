@@ -41,6 +41,8 @@ from models import (
     UserSearchResponse, UserSearchItem, PeerRecommendationResponse, PeerRecommendationItem,
     GeneratePlanRequest, LearningPlanResponse,
     UpdateProgressRequest, DashboardResponse,
+    TaskStartResponse, TaskSubmitRequest, TaskSubmitResponse,
+    PracticeProjectSubmitRequest, PracticeProjectSubmissionResponse,
     ChatRequest, ChatResponse,
     GeneratePhasesRequest, PhaseResponse, PhaseTask,
     ProjectSubmitRequest, ProjectSubmissionResponse, ProjectError,
@@ -976,6 +978,15 @@ def generate_plan(payload: GeneratePlanRequest, user_id: int = Depends(get_curre
     if plan.get("practice_project"):
         add_tasks([plan["practice_project"]], "project")
 
+    # Unlock the first available task in the hierarchy
+    hierarchy = ["daily", "weekly", "monthly", "project"]
+    for t_type in hierarchy:
+        cur.execute("SELECT id FROM progress WHERE learning_plan_id = ? AND task_type = ? ORDER BY id ASC LIMIT 1", (plan_id, t_type))
+        first_task = cur.fetchone()
+        if first_task:
+            cur.execute("UPDATE progress SET status = 'available' WHERE id = ?", (first_task["id"],))
+            break
+
     conn.commit()
     conn.close()
 
@@ -1013,6 +1024,172 @@ def update_progress(payload: UpdateProgressRequest, user_id: int = Depends(get_c
     conn.close()
     return {"message": "Progress updated."}
 
+@app.post("/api/progress/{progress_id}/start", response_model=TaskStartResponse, tags=["Progress"])
+def start_task(progress_id: int, user_id: int = Depends(get_current_user_id)):
+    """Starts a task, changing its status and generating questions if needed."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT * FROM progress WHERE id = ? AND user_id = ?", (progress_id, user_id))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Task not found.")
+        
+    task = dict(row)
+    if task["status"] == "locked":
+        conn.close()
+        raise HTTPException(status_code=400, detail="Task is locked. Complete previous tasks first.")
+        
+    cur.execute("SELECT * FROM student_profiles WHERE user_id = ?", (user_id,))
+    profile_row = cur.fetchone()
+    profile = dict(profile_row) if profile_row else {}
+    
+    questions_json = task.get("questions")
+    if not questions_json:
+        # Generate questions
+        q_list = gemini_service.generate_task_questions(profile, task["task_name"], task["task_type"])
+        questions_json = json.dumps(q_list)
+        
+    cur.execute("UPDATE progress SET status = 'question_pending', questions = ? WHERE id = ?", (questions_json, progress_id))
+    conn.commit()
+    conn.close()
+    
+    return {
+        "id": progress_id,
+        "task_name": task["task_name"],
+        "questions": json.loads(questions_json)
+    }
+
+@app.post("/api/progress/{progress_id}/submit", response_model=TaskSubmitResponse, tags=["Progress"])
+def submit_task(progress_id: int, payload: TaskSubmitRequest, user_id: int = Depends(get_current_user_id)):
+    """Submits answers for a task, marks it completed, and unlocks the next task."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT * FROM progress WHERE id = ? AND user_id = ?", (progress_id, user_id))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Task not found.")
+        
+    # In a real app we might grade this via AI. For now, since they attempted it, we consider it a pass (100).
+    score = 100
+    answers_json = json.dumps([a.dict() for a in payload.answers])
+    
+    cur.execute("""
+        UPDATE progress 
+        SET status = 'completed', is_completed = 1, completed_at = datetime('now'), answers = ?, score = ? 
+        WHERE id = ?
+    """, (answers_json, score, progress_id))
+    
+    # Unlock logic based on hierarchy
+    hierarchy = ["daily", "weekly", "monthly", "project"]
+    current_type = row["task_type"]
+    
+    next_task = None
+    
+    # 1. Try to find next task of same type
+    cur.execute("""
+        SELECT id FROM progress 
+        WHERE learning_plan_id = ? AND task_type = ? AND id > ? AND is_completed = 0 
+        ORDER BY id ASC LIMIT 1
+    """, (row["learning_plan_id"], current_type, progress_id))
+    next_task = cur.fetchone()
+    
+    # 2. If none, find the next hierarchy tier
+    if not next_task and current_type in hierarchy:
+        current_idx = hierarchy.index(current_type)
+        if current_idx < len(hierarchy) - 1:
+            for next_idx in range(current_idx + 1, len(hierarchy)):
+                next_type = hierarchy[next_idx]
+                cur.execute("""
+                    SELECT id FROM progress 
+                    WHERE learning_plan_id = ? AND task_type = ? AND is_completed = 0 
+                    ORDER BY id ASC LIMIT 1
+                """, (row["learning_plan_id"], next_type))
+                next_task = cur.fetchone()
+                if next_task:
+                    break
+            
+    next_unlocked = False
+    if next_task:
+        cur.execute("UPDATE progress SET status = 'available' WHERE id = ?", (next_task["id"],))
+        next_unlocked = True
+        
+    _update_streak_and_badges(conn, cur, user_id)
+    conn.commit()
+    conn.close()
+    
+    return {
+        "success": True,
+        "score": score,
+        "feedback": "Great job! Task completed.",
+        "next_task_unlocked": next_unlocked
+    }
+
+@app.post("/api/progress/{progress_id}/submit_project", response_model=PracticeProjectSubmissionResponse, tags=["Progress"])
+def submit_practice_project(progress_id: int, payload: PracticeProjectSubmitRequest, user_id: int = Depends(get_current_user_id)):
+    """Submits a Practice Project for AI review."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT p.*, l.practice_project as brief 
+        FROM progress p
+        JOIN learning_plans l ON p.learning_plan_id = l.id
+        WHERE p.id = ? AND p.user_id = ?
+    """, (progress_id, user_id))
+    row = cur.fetchone()
+    
+    if not row or row["task_type"] != "project":
+        conn.close()
+        raise HTTPException(status_code=404, detail="Project task not found.")
+        
+    if row["status"] == "locked":
+        conn.close()
+        raise HTTPException(status_code=400, detail="Project is locked. Complete previous tasks first.")
+        
+    cur.execute("SELECT * FROM student_profiles WHERE user_id = ?", (user_id,))
+    prof_row = cur.fetchone()
+    skills = prof_row["skills"].split(",") if prof_row and prof_row["skills"] else []
+    
+    try:
+        review = gemini_service.review_project_submission(
+            phase_name="Practice Project",
+            focus_skills=skills,
+            project_brief=row["brief"],
+            submission_type=payload.submission_type,
+            content=payload.content
+        )
+    except Exception as e:
+        conn.close()
+        raise HTTPException(status_code=502, detail=f"AI review failed: {e}")
+        
+    score = review.get("score", 0)
+    approved = review.get("approved", False)
+    status = "completed" if approved else "in_progress"
+    
+    cur.execute("""
+        UPDATE progress 
+        SET status = ?, score = ?, is_completed = ?, completed_at = CASE WHEN ? THEN datetime('now') ELSE NULL END
+        WHERE id = ?
+    """, (status, score, 1 if approved else 0, 1 if approved else 0, progress_id))
+    
+    if approved:
+        _update_streak_and_badges(conn, cur, user_id)
+        
+    conn.commit()
+    conn.close()
+    
+    return {
+        "id": progress_id,
+        "status": status,
+        "ai_summary": review.get("summary", ""),
+        "ai_errors": review.get("errors", []),
+        "ai_score": score,
+        "next_task_unlocked": False
+    }
 
 # =========================================================================
 # DASHBOARD
@@ -1113,6 +1290,7 @@ def get_dashboard(user_id: int = Depends(get_current_user_id)):
         progress_items = [{
             "id": p["id"], "task_name": p["task_name"], "task_type": p["task_type"],
             "is_completed": bool(p["is_completed"]),
+            "status": p["status"],
         } for p in prog_rows]
         if progress_items:
             done = sum(1 for p in progress_items if p["is_completed"])
@@ -2295,8 +2473,8 @@ def export_user_resume(user_id: int = Depends(get_current_user_id)):
     projects = cur.fetchall()
     conn.close()
 
-    resume_md = gemini_service.export_resume(dict(profile), [dict(p) for p in projects])
-    return {"resume_markdown": resume_md}
+    resume_json = gemini_service.export_resume(dict(profile), [dict(p) for p in projects])
+    return {"resume_json": resume_json}
 
 @app.get("/portfolio/{username}", tags=["Portfolio"])
 def get_public_portfolio(username: str):

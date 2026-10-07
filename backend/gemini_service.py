@@ -127,14 +127,14 @@ def _call_gemini(prompt: str, feature: str = "default", expect_json: bool = Fals
                         "messages": [{"role": "user", "content": prompt}]
                     }
                     
-                    # Strict 10s timeout using a thread to absolutely prevent OpenRouter free-tier from hanging
+                    # Increased timeout to 60s for NVIDIA integration API
                     temp_exec = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-                    future = temp_exec.submit(requests.post, url, headers=headers, json=payload, timeout=10)
+                    future = temp_exec.submit(requests.post, url, headers=headers, json=payload, timeout=60)
                     try:
-                        response = future.result(timeout=10)
+                        response = future.result(timeout=60)
                     except concurrent.futures.TimeoutError:
                         temp_exec.shutdown(wait=False)
-                        raise RuntimeError("OpenRouter API hanging (Free Tier Limit). Forcing fallback.")
+                        raise RuntimeError("Provider API hanging (Timeout). Forcing fallback.")
                     finally:
                         temp_exec.shutdown(wait=False)
                 
@@ -653,8 +653,8 @@ Student's new message: {message}
     try:
         return _call_gemini_with_hard_timeout(prompt, "ai_chat").strip()
     except Exception as e:
-        print(f"[gemini_service] Gemini chat call failed: {e}. Falling back to mock generator.")
-        return _get_mock_chat_reply(message, profile)
+        print(f"[gemini_service] Gemini chat call failed: {e}. Falling back to error display.")
+        return f"⚠️ **API Error**: The AI is currently unavailable because your API keys have run out of credits or quota.\n\n_System Details: {str(e)}_\n\nPlease update your `.env` file with a working API key that has credits remaining to continue chatting!"
 
 
 # =========================================================================
@@ -1091,30 +1091,92 @@ Return ONLY the summary, optionally formatted with markdown bullet points or emo
         mock_points = "\n".join([f"• {line}" for line in lines[:5]])
         return f"[AI currently unreachable - Offline Summary]\n{mock_points}"
 
-def export_resume(profile: dict, projects: list) -> str:
+def export_resume(profile: dict, projects: list) -> dict:
     """
-    Generates a professional markdown resume based on the student's profile and completed projects.
+    Generates a highly structured professional resume JSON based on the student's profile and completed projects.
     """
-    projects_text = "\n".join([f"- **{p['task_name']}**: Completed on {p.get('updated_at', 'recently')}" for p in projects])
+    projects_text = "\n".join([f"- **{p['task_name']}**: Completed on {p.get('completed_at', 'recently')}" for p in projects])
     
     prompt = f"""
-You are an expert resume writer. Create a professional markdown resume for the following student.
-Do not include any pleasantries or conversational text, output ONLY the markdown resume.
+You are an expert resume writer. Create a highly professional, structured JSON resume for this student.
 
-Name: {profile.get('name', 'Student')}
+Student Name: {profile.get('name', 'Student')}
 Education: {profile.get('education', '')} in {profile.get('department', '')} at {profile.get('college', '')}
 Skills: {profile.get('skills', '')}
 Career Goal: {profile.get('career_goal', '')}
-
-Projects & Experience:
+Completed Projects/Tasks:
 {projects_text}
+
+Respond ONLY with valid JSON exactly in this shape:
+{{
+  "name": "Full Name",
+  "contact": "Email / Phone / LinkedIn (placeholder)",
+  "objective": "A strong 2-3 sentence professional summary based on the career goal.",
+  "education": [
+    {{"degree": "Degree Name", "institution": "College Name", "year": "Expected Graduation"}}
+  ],
+  "skills": ["Skill 1", "Skill 2"],
+  "projects": [
+    {{"title": "Project Title", "description": "1-2 sentence professional description of what was achieved based on the task name."}}
+  ],
+  "experience": []
+}}
+"""
+    try:
+        raw = _call_gemini_with_hard_timeout(prompt, "career_guidance")
+        return _extract_json(raw)
+    except Exception as e:
+        print(f"[gemini_service] Gemini API call failed for resume: {e}")
+        return {
+            "name": profile.get("name", "Student"),
+            "contact": "student@example.com",
+            "objective": f"Aspiring {profile.get('career_goal', 'Professional')} with a background in {profile.get('department')}.",
+            "education": [{"degree": profile.get("education"), "institution": profile.get("college"), "year": profile.get("current_year")}],
+            "skills": [s.strip() for s in profile.get("skills", "").split(",")],
+            "projects": [{"title": p["task_name"], "description": "Completed project."} for p in projects],
+            "experience": []
+        }
+
+def generate_task_questions(profile: dict, task_name: str, task_type: str) -> list[dict]:
+    """
+    Generates contextual questions for a specific learning task based on the user's field.
+    Enforces strict rules on whether coding questions are applicable.
+    """
+    prompt = f"""
+You are an expert AI mentor evaluating a student's completion of a learning task.
+The student has just studied the task: "{task_name}" (Type: {task_type}).
+
+Student Profile:
+- Education/Course: {profile.get('education', '')} in {profile.get('department', '')}
+- Career Goal: {profile.get('career_goal', '')}
+- Skill Level: Beginner/Intermediate
+
+CRITICAL RULE:
+Determine if the student's field/career explicitly requires software programming (e.g., Computer Science, IT, Web Developer, Data Scientist, Software Engineer).
+- IF YES and the task is about a programming language/tool (HTML, Python, Java, etc.): Generate 2 theory questions AND 1 practical coding question.
+- IF NO (e.g., Biology, Medicine, Law, Commerce, Psychology, Arts) or the task has nothing to do with coding: DO NOT generate any coding questions. Generate 3 theory/concept/application questions relevant to the task and their field.
+
+Return exactly 3 questions in a valid JSON array format, like this:
+[
+  {{
+    "question": "<The question text>",
+    "type": "theory", // or "coding" ONLY if applicable
+    "options": ["Option A", "Option B", "Option C", "Option D"] // Only include options if it's a multiple choice theory question
+  }}
+]
+
+Make the questions directly relevant to "{task_name}". Do not use markdown backticks outside of the JSON array.
 """
     try:
         raw = _call_gemini_with_hard_timeout(prompt)
-        return raw.strip()
+        return _extract_json(raw)
     except Exception as e:
-        print(f"[gemini_service] Gemini API call failed for resume: {e}")
-        return f"# {profile.get('name', 'Student')}\n\n## Education\n{profile.get('education')} - {profile.get('college')}\n\n## Skills\n{profile.get('skills')}\n\n## Projects\n{projects_text}"
+        print(f"[gemini_service] Gemini API call failed for task questions: {e}")
+        return [
+            {"question": f"Summarize what you learned about {task_name}.", "type": "theory"},
+            {"question": "How does this apply to your future career?", "type": "theory"},
+            {"question": "What was the most challenging part of this topic?", "type": "theory"}
+        ]
 
 def generate_global_career_profile(career_name: str) -> dict:
     """

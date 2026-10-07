@@ -19,7 +19,17 @@ def get_routing_chain(feature: str) -> list[dict]:
     selected_provider = os.getenv(provider_env_key)
     
     if feature == "ai_chat":
-        # Rule: ai_chat gives FIRST priority to Gemini Mentor key, then fallback to Z.AI
+        # First priority: NVIDIA API (as requested by user)
+        nvidia_key = os.getenv("NVIDIA_API_KEY")
+        if nvidia_key and not nvidia_key.startswith("your_"):
+            chain.append({
+                "provider": "openrouter", # Uses same OpenAI-compatible format
+                "url": "https://integrate.api.nvidia.com/v1/chat/completions",
+                "api_key": nvidia_key,
+                "model": os.getenv("NVIDIA_MODEL", "poolside/laguna-xs-2.1")
+            })
+
+        # Fallback to Gemini
         mentor_gemini = gemini_default.copy()
         if os.getenv("GEMINI_API_KEY_MENTOR"):
             mentor_gemini["api_key"] = os.getenv("GEMINI_API_KEY_MENTOR")
@@ -56,13 +66,13 @@ def get_routing_chain(feature: str) -> list[dict]:
                     "model": os.getenv("COHERE_MODEL", "liquid/lfm-40b:free")
                 })
         elif selected_provider == "NVIDIA":
-            key = os.getenv("OPENROUTER_API_KEY")
+            key = os.getenv("NVIDIA_API_KEY")
             if key and not key.startswith("your_"):
                 chain.append({
-                    "provider": "openrouter",
-                    "url": "https://openrouter.ai/api/v1/chat/completions",
+                    "provider": "openrouter", # Uses same OpenAI-compatible format
+                    "url": "https://integrate.api.nvidia.com/v1/chat/completions",
                     "api_key": key,
-                    "model": os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3.5-lightning:free")
+                    "model": os.getenv("NVIDIA_MODEL", "poolside/laguna-xs-2.1")
                 })
 
         # Add the Gemini fallback at the end of the chain

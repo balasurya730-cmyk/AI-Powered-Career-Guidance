@@ -139,22 +139,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     wrap.innerHTML = "";
     Object.keys(TASK_TYPE_LABELS).forEach((type) => {
       if (!grouped[type]) return;
-      const group = document.createElement("div");
-      group.className = "task-group";
-      group.innerHTML = `
-        <span class="task-group-label">${TASK_TYPE_LABELS[type]}</span>
-        ${grouped[type].map((task) => `
-          <div class="task-item ${task.is_completed ? "completed" : ""}" data-task-id="${task.id}">
-            <div class="task-checkbox">${task.is_completed ? checkmarkSvg() : ""}</div>
-            <div class="task-text">${escapeHtml(task.task_name)}</div>
-          </div>
-        `).join("")}
-      `;
-      wrap.appendChild(group);
+      
+      const hasAvailable = grouped[type].some(t => t.status === 'available' || t.status === 'in_progress' || t.status === 'question_pending');
+      const isCompleted = grouped[type].every(t => t.status === 'completed');
+      
+      const accordion = document.createElement("div");
+      accordion.className = `task-accordion ${hasAvailable ? 'open' : ''}`;
+      
+      const header = document.createElement("div");
+      header.className = "task-accordion-header";
+      header.innerHTML = `<span>${TASK_TYPE_LABELS[type]}</span> <span style="font-size:0.8rem; font-weight:normal;">${isCompleted ? 'Completed ✅' : (hasAvailable ? 'Action Required ▼' : 'Locked 🔒')}</span>`;
+      
+      header.addEventListener("click", () => {
+        accordion.classList.toggle("open");
+      });
+      
+      const content = document.createElement("div");
+      content.className = "task-accordion-content";
+      content.innerHTML = grouped[type].map((task) => `
+        <div class="task-item status-${task.status || (task.is_completed ? 'completed' : 'locked')}" data-task-id="${task.id}" data-task-type="${task.task_type}" data-task-name="${escapeHtml(task.task_name)}">
+          <div class="task-checkbox">${task.is_completed ? checkmarkSvg() : ""}</div>
+          <div class="task-text">${escapeHtml(task.task_name)}</div>
+          <div class="task-state-badge">${(task.status || (task.is_completed ? 'completed' : 'locked')).replace('_', ' ')}</div>
+        </div>
+      `).join("");
+      
+      accordion.appendChild(header);
+      accordion.appendChild(content);
+      wrap.appendChild(accordion);
     });
 
     wrap.querySelectorAll(".task-item").forEach((item) => {
-      item.addEventListener("click", () => toggleTask(item));
+      item.addEventListener("click", () => handleTaskClick(item));
     });
   }
 
@@ -189,32 +205,171 @@ document.addEventListener("DOMContentLoaded", async () => {
     wrap.innerHTML = sectionMarkup + projectMarkup;
   }
 
-  async function toggleTask(itemEl) {
-    const taskId = parseInt(itemEl.getAttribute("data-task-id"));
-    const willComplete = !itemEl.classList.contains("completed");
+  let currentTaskQuestions = [];
 
-    // Optimistic UI update
-    itemEl.classList.toggle("completed", willComplete);
-    const checkbox = itemEl.querySelector(".task-checkbox");
-    checkbox.innerHTML = willComplete ? checkmarkSvg() : "";
-
-    try {
-      await apiRequest("/api/progress/update", {
-        method: "POST",
-        body: { progress_id: taskId, is_completed: willComplete },
-      });
-      // Refresh the top progress summary from the server for accuracy
-      const data = await apiRequest("/api/dashboard");
-      renderProgressSummary(data.progress_percentage, data.progress);
-      updateCongratsCard(data);
-      renderStreaksAndBadges(data);
-    } catch (err) {
-      // Revert on failure
-      itemEl.classList.toggle("completed", !willComplete);
-      checkbox.innerHTML = !willComplete ? checkmarkSvg() : "";
-      alert("Could not update progress: " + err.message);
+  function handleTaskClick(itemEl) {
+    if (itemEl.classList.contains("status-locked")) {
+      alert("This task is locked. Complete the previous tasks first!");
+      return;
+    }
+    if (itemEl.classList.contains("status-completed")) {
+      alert("You have already completed this task.");
+      return;
+    }
+    
+    const taskType = itemEl.getAttribute("data-task-type");
+    if (taskType === "project") {
+      openProjectModal(itemEl);
+    } else {
+      openTaskModal(itemEl);
     }
   }
+
+  // --- PROJECT MODAL LOGIC ---
+  function openProjectModal(itemEl) {
+    const taskId = parseInt(itemEl.getAttribute("data-task-id"));
+    const taskName = itemEl.getAttribute("data-task-name");
+    
+    document.getElementById("projectModalTitle").textContent = taskName;
+    document.getElementById("projectModalOverlay").classList.add("active");
+    document.getElementById("projectModalTaskId").value = taskId;
+    document.getElementById("projectSubmissionFeedback").style.display = "none";
+    document.getElementById("projectContent").value = "";
+  }
+  
+  window.submitPracticeProject = async function() {
+    const taskId = document.getElementById("projectModalTaskId").value;
+    const type = document.getElementById("projectSubmissionType").value;
+    const content = document.getElementById("projectContent").value;
+    
+    if (!content.trim()) {
+      alert("Please enter a link or code.");
+      return;
+    }
+    
+    document.getElementById("projectSubmitBtn").disabled = true;
+    document.getElementById("projectSubmitBtn").textContent = "Submitting...";
+    
+    try {
+      const resp = await apiRequest(`/api/progress/${taskId}/submit_project`, {
+        method: "POST",
+        body: { submission_type: type, content: content }
+      });
+      
+      const feedback = document.getElementById("projectSubmissionFeedback");
+      feedback.style.display = "block";
+      feedback.innerHTML = `
+        <h4 style="margin-top:0;">${resp.status === 'completed' ? '✅ Approved' : '❌ Needs Work'} (Score: ${resp.ai_score})</h4>
+        <p>${resp.ai_summary}</p>
+        ${resp.ai_errors.length > 0 ? `
+          <ul style="padding-left: 20px; font-size: 0.9rem;">
+            ${resp.ai_errors.map(e => `<li><strong>${e.issue}</strong>: ${e.why} <br><em>Fix: ${e.fix}</em></li>`).join('')}
+          </ul>
+        ` : ''}
+      `;
+      
+      if (resp.status === 'completed') {
+        setTimeout(() => {
+          document.getElementById("projectModalOverlay").classList.remove("active");
+          loadDashboard();
+        }, 5000);
+      }
+    } catch(err) {
+      alert("Submission failed: " + err.message);
+    } finally {
+      document.getElementById("projectSubmitBtn").disabled = false;
+      document.getElementById("projectSubmitBtn").textContent = "Submit Project for Review";
+    }
+  }
+  
+  document.getElementById("projectModalClose")?.addEventListener("click", () => {
+    document.getElementById("projectModalOverlay").classList.remove("active");
+  });
+  // ---------------------------
+
+  async function openTaskModal(itemEl) {
+    const taskId = parseInt(itemEl.getAttribute("data-task-id"));
+    const taskName = itemEl.getAttribute("data-task-name");
+    
+    document.getElementById("taskModalTitle").textContent = taskName;
+    document.getElementById("taskModalOverlay").classList.add("active");
+    
+    document.getElementById("taskModalLoading").style.display = "block";
+    document.getElementById("taskModalQuestions").style.display = "none";
+    document.getElementById("taskModalSubmitBtn").style.display = "none";
+    document.getElementById("taskModalFeedback").style.display = "none";
+    
+    try {
+      const data = await apiRequest(`/api/progress/${taskId}/start`, { method: "POST" });
+      currentTaskQuestions = data.questions;
+      renderTaskQuestions(taskId, currentTaskQuestions);
+    } catch (err) {
+      alert("Could not start task: " + err.message);
+      document.getElementById("taskModalOverlay").classList.remove("active");
+    }
+  }
+
+  function renderTaskQuestions(taskId, questions) {
+    document.getElementById("taskModalLoading").style.display = "none";
+    const container = document.getElementById("taskModalQuestions");
+    container.style.display = "block";
+    
+    container.innerHTML = questions.map((q, idx) => `
+      <div class="question-block">
+        <div class="question-text">${idx + 1}. ${escapeHtml(q.question)} <span class="question-type-badge">${q.type}</span></div>
+        <textarea class="question-input" id="task_ans_${idx}" placeholder="Write your answer here..."></textarea>
+      </div>
+    `).join("");
+    
+    const submitBtn = document.getElementById("taskModalSubmitBtn");
+    submitBtn.style.display = "block";
+    submitBtn.onclick = () => submitTaskAnswers(taskId, questions);
+  }
+
+  async function submitTaskAnswers(taskId, questions) {
+    const answers = questions.map((_, idx) => ({
+      answer: document.getElementById(`task_ans_${idx}`).value
+    }));
+    
+    document.getElementById("taskModalSubmitBtn").disabled = true;
+    document.getElementById("taskModalSubmitBtn").textContent = "Submitting...";
+    
+    try {
+      const res = await apiRequest(`/api/progress/${taskId}/submit`, {
+        method: "POST",
+        body: { answers: answers }
+      });
+      
+      document.getElementById("taskModalQuestions").style.display = "none";
+      document.getElementById("taskModalSubmitBtn").style.display = "none";
+      
+      const feedback = document.getElementById("taskModalFeedback");
+      feedback.style.display = "block";
+      document.getElementById("taskModalFeedbackText").textContent = res.feedback;
+      
+      // Refresh dashboard in background
+      const data = await apiRequest("/api/dashboard");
+      renderProgressSummary(data.progress_percentage, data.progress);
+      renderTasks(data.progress);
+      updateCongratsCard(data);
+      renderStreaksAndBadges(data);
+      
+    } catch (err) {
+      alert("Failed to submit: " + err.message);
+    } finally {
+      document.getElementById("taskModalSubmitBtn").disabled = false;
+      document.getElementById("taskModalSubmitBtn").textContent = "Submit Answers & Complete Task";
+    }
+  }
+
+  document.getElementById("taskModalClose").addEventListener("click", () => {
+    document.getElementById("taskModalOverlay").classList.remove("active");
+  });
+  
+  document.getElementById("taskModalDoneBtn").addEventListener("click", () => {
+    document.getElementById("taskModalOverlay").classList.remove("active");
+  });
+
 
   function checkmarkSvg() {
     return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -287,12 +442,74 @@ document.addEventListener("DOMContentLoaded", async () => {
       btnExportResume.textContent = "Generating...";
       try {
         const res = await apiRequest("/api/resume/export");
-        const blob = new Blob([res.resume_markdown], { type: "text/markdown" });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "Resume.md";
-        a.click();
+        const r = res.resume_json || {};
+        
+        const paper = document.getElementById("resumePaper");
+        
+        let educationHtml = '';
+        if (r.education && Array.isArray(r.education)) {
+          educationHtml = r.education.map(edu => `
+            <div class="resume-item">
+              <div class="resume-item-header">
+                <span class="resume-item-title">${escapeHtml(edu.degree || "")}</span>
+                <span class="resume-item-meta">${escapeHtml(edu.year || "")}</span>
+              </div>
+              <div style="color: #4a5568;">${escapeHtml(edu.institution || "")}</div>
+            </div>
+          `).join("");
+        }
+
+        let projectsHtml = '';
+        if (r.projects && Array.isArray(r.projects)) {
+          projectsHtml = r.projects.map(proj => `
+            <div class="resume-item">
+              <div class="resume-item-header">
+                <span class="resume-item-title">${escapeHtml(proj.title || "")}</span>
+              </div>
+              <p style="margin-top: 4px; font-size: 0.95rem;">${escapeHtml(proj.description || "")}</p>
+            </div>
+          `).join("");
+        }
+        
+        let skillsHtml = '';
+        if (r.skills && Array.isArray(r.skills)) {
+          skillsHtml = `<ul class="resume-skills-list">` + r.skills.map(skill => `<li>${escapeHtml(skill)}</li>`).join("") + `</ul>`;
+        }
+
+        paper.innerHTML = `
+          <div class="resume-header">
+            <h1>${escapeHtml(r.name || "Student")}</h1>
+            <div class="resume-contact">
+              <span>${escapeHtml(r.contact || "student@example.com")}</span>
+            </div>
+          </div>
+          
+          ${r.objective ? `
+          <div class="resume-section">
+            <h2 class="resume-section-title">Professional Summary</h2>
+            <div class="resume-objective">${escapeHtml(r.objective)}</div>
+          </div>` : ''}
+          
+          ${skillsHtml ? `
+          <div class="resume-section">
+            <h2 class="resume-section-title">Core Skills</h2>
+            ${skillsHtml}
+          </div>` : ''}
+          
+          ${educationHtml ? `
+          <div class="resume-section">
+            <h2 class="resume-section-title">Education</h2>
+            ${educationHtml}
+          </div>` : ''}
+          
+          ${projectsHtml ? `
+          <div class="resume-section">
+            <h2 class="resume-section-title">Projects & Experience</h2>
+            ${projectsHtml}
+          </div>` : ''}
+        `;
+        
+        document.getElementById("resumePrintOverlay").classList.remove("hidden");
       } catch (err) {
         alert("Failed to export resume: " + err.message);
       } finally {
