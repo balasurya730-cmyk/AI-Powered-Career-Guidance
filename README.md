@@ -16,14 +16,18 @@ Built with:
 
 ## 1. Features
 
-- **Home page** — project overview + "Get Started" call to action
-- **Register / Login** — secure signup with hashed passwords + JWT sessions
-- **Student Profile** — education, department, college, year, skills, interests, daily study hours, optional career goal
-- **AI Career Advisor** — if no career goal is set, asks a few quick questions and returns the top 5 recommended careers (with description, required skills, future scope, and reasoning)
-- **AI Learning Planner** — generates a daily plan, weekly plan, monthly roadmap, skills to learn, free resources, and a small practice project for the chosen career
-- **Dashboard** — profile summary, selected career, learning plan, and progress percentage
-- **Progress Tracker** — check off tasks and watch your progress bar update in real time
-- **AI Chat** — a simple free-form Q&A page to ask the AI anything directly (not just structured career/planner forms), with conversation context kept for the session
+- **Global Career Profiles (A-Z Careers)** — dynamically generated, comprehensive global career profiles using AI.
+- **Student Profile** — education, skills, interests, daily study hours, and an optional target career goal.
+- **AI Career Advisor** — asks contextual questions to recommend the top 5 matching careers for undecided students.
+- **Skill Gap Analyzer** — identifies missing skills for a selected career and suggests specific free/low-cost courses and certifications to bridge the gap.
+- **AI Learning Planner** — generates a personalized daily plan, weekly schedule, skills checklist, resources, and practice projects.
+- **Phased Roadmap & Milestones** — automatically breaks down long-term goals into multi-month curriculums, gated by AI-proctored technical assessments for each phase.
+- **Gamification & Leaderboard** — keeps students engaged with global leaderboards, badges, streaks, and a friends activity feed.
+- **Certification Module** — students earn a cryptographic "Trailhead Certified" certificate of completion after passing all roadmap phases.
+- **Mock Interviews** — AI-powered technical mock interviews tailored to the student's career track with detailed grading.
+- **Peer Networking & Group Chat** — find peers with similar goals, join global study rooms, and participate in direct 1-on-1 AI-moderated chat.
+- **Video Meet** — virtual study rooms via integrated WebRTC logic.
+- **Robust AI Fallbacks** — handles AI provider rate limits seamlessly by falling back to mock generators, preventing app downtime.
 
 ---
 
