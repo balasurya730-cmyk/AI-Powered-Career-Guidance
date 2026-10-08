@@ -23,7 +23,7 @@ import asyncio
 from email.message import EmailMessage
 from typing import Optional
 from datetime import datetime, timedelta, date
-from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File, Form, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File, Form, WebSocket, WebSocketDisconnect, Query, Request, Response
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -150,7 +150,7 @@ def send_email_alert(to_email: str, subject: str, body: str) -> bool:
 # =========================================================================
 
 @app.post("/api/register", response_model=TokenResponse, tags=["Auth"])
-def register(payload: RegisterRequest):
+def register(payload: RegisterRequest, response: Response):
     """Create a new account. Emails must be unique."""
     conn = get_connection()
     cur = conn.cursor()
@@ -171,12 +171,19 @@ def register(payload: RegisterRequest):
     conn.close()
 
     token = create_access_token(user_id, payload.email)
-    return TokenResponse(access_token=token, user_id=user_id, name=payload.name, email=payload.email)
+    response.set_cookie(
+        key="alp_session",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=1440 * 60,  # 24 hours
+    )
+    return TokenResponse(access_token="", user_id=user_id, name=payload.name, email=payload.email)
 
 
 @app.post("/api/login", response_model=TokenResponse, tags=["Auth"])
-def login(payload: LoginRequest):
-    """Verify email + password, return a JWT session token."""
+def login(payload: LoginRequest, response: Response):
+    """Verify email + password, set an HTTP-only session cookie."""
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("SELECT id, name, email, password_hash FROM users WHERE email = ?", (payload.email,))
@@ -187,7 +194,14 @@ def login(payload: LoginRequest):
         raise HTTPException(status_code=401, detail="Incorrect email or password.")
 
     token = create_access_token(row["id"], row["email"])
-    return TokenResponse(access_token=token, user_id=row["id"], name=row["name"], email=row["email"])
+    response.set_cookie(
+        key="alp_session",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=1440 * 60,
+    )
+    return TokenResponse(access_token="", user_id=row["id"], name=row["name"], email=row["email"])
 
 
 @app.get("/api/config", tags=["Config"])
@@ -197,7 +211,7 @@ def get_config():
 
 
 @app.post("/api/auth/google", response_model=TokenResponse, tags=["Auth"])
-def google_auth(payload: GoogleAuthRequest):
+def google_auth(payload: GoogleAuthRequest, response: Response):
     """Verify Google token, login or create new user."""
     try:
         id_info = id_token.verify_oauth2_token(
@@ -234,10 +248,30 @@ def google_auth(payload: GoogleAuthRequest):
         conn.close()
 
         token = create_access_token(row["id"], row["email"])
-        return TokenResponse(access_token=token, user_id=row["id"], name=row["name"], email=row["email"])
+        response.set_cookie(
+            key="alp_session",
+            value=token,
+            httponly=True,
+            samesite="lax",
+            max_age=1440 * 60,
+        )
+        return TokenResponse(access_token="", user_id=row["id"], name=row["name"], email=row["email"])
 
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid Google token.")
+
+
+@app.post("/api/logout", tags=["Auth"])
+def logout(response: Response):
+    """Clears the HTTP-only session cookie."""
+    response.delete_cookie(key="alp_session", httponly=True, samesite="lax")
+    return {"message": "Successfully logged out"}
+
+
+@app.get("/api/auth/status", tags=["Auth"])
+def auth_status(user_id: int = Depends(get_current_user_id)):
+    """Simple endpoint for the frontend to verify if a valid session cookie exists."""
+    return {"authenticated": True, "user_id": user_id}
 
 
 RESET_TOKEN_EXPIRE_MINUTES = 30

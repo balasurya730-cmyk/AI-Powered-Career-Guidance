@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
             password: document.getElementById("password").value,
           },
         });
-        Auth.setSession(data.access_token, {
+        Auth.setSession({
           user_id: data.user_id, name: data.name, email: data.email,
         });
         window.location.href = "profile.html";
@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
             password: document.getElementById("password").value,
           },
         });
-        Auth.setSession(data.access_token, {
+        Auth.setSession({
           user_id: data.user_id, name: data.name, email: data.email,
         });
         window.location.href = "dashboard.html";

@@ -11,23 +11,20 @@ if (window.location.protocol === "file:") {
 }
 
 const Auth = {
-  getToken() {
-    return localStorage.getItem("alp_token");
-  },
   getUser() {
     const raw = localStorage.getItem("alp_user");
     return raw ? JSON.parse(raw) : null;
   },
-  setSession(token, user) {
-    localStorage.setItem("alp_token", token);
+  setSession(user) {
+    localStorage.setItem("alp_logged_in", "true");
     localStorage.setItem("alp_user", JSON.stringify(user));
   },
   clearSession() {
-    localStorage.removeItem("alp_token");
+    localStorage.removeItem("alp_logged_in");
     localStorage.removeItem("alp_user");
   },
   isLoggedIn() {
-    return !!this.getToken();
+    return localStorage.getItem("alp_logged_in") === "true";
   },
   /* Call at the top of any page that requires login. Redirects to login.html if not authenticated.
      Optionally pass a message to show on the login page. */
@@ -39,7 +36,10 @@ const Auth = {
       window.location.href = url;
     }
   },
-  logout() {
+  async logout() {
+    try {
+      await fetch(`${API_BASE}/api/logout`, { method: "POST", credentials: "include" });
+    } catch(e) {}
     this.clearSession();
     window.location.href = "login.html";
   },
@@ -53,14 +53,11 @@ const Auth = {
  */
 async function apiRequest(path, { method = "GET", body = null, skipAuth = false } = {}) {
   const headers = { "Content-Type": "application/json" };
-  if (!skipAuth) {
-    const token = Auth.getToken();
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-  }
 
   const response = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
+    credentials: "include", // Send HTTP-only cookies
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -98,13 +95,9 @@ async function apiRequest(path, { method = "GET", body = null, skipAuth = false 
  * formData is a native FormData instance built by the caller.
  */
 async function apiUpload(path, formData) {
-  const headers = {};
-  const token = Auth.getToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
   const response = await fetch(`${API_BASE}${path}`, {
     method: "POST",
-    headers,          // no Content-Type: the browser sets the multipart boundary itself
+    credentials: "include",
     body: formData,
   });
 
