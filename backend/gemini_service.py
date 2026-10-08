@@ -215,9 +215,8 @@ CRITICAL: You must use valid JSON syntax. Escape any internal double quotes usin
         careers = data.get("careers", data if isinstance(data, list) else [])
         return careers[:5]
     except Exception as e:
-        print(f"[gemini_service] Gemini API call failed: {e}. Raising 503.")
-        from fastapi import HTTPException
-        raise HTTPException(status_code=503, detail="Our AI is experiencing high traffic. Please try selecting your career again in a moment.")
+        print(f"[gemini_service] Gemini API call failed: {e}. Falling back to mock generator.")
+        return _get_mock_careers(profile, extra_answers)
 
 def generate_learning_plan(profile: dict, career_name: str) -> dict:
     prompt = f"""
@@ -478,9 +477,8 @@ exactly one correct option.
             raise ValueError("not enough questions returned")
         return questions[:num_questions]
     except Exception as e:
-        print(f"[gemini_service] Gemini API call failed: {e}. Raising 503.")
-        from fastapi import HTTPException
-        raise HTTPException(status_code=503, detail="Our AI is experiencing high traffic. Please try generating the test again in a moment.")
+        print(f"[gemini_service] Gemini API call failed: {e}. Falling back to mock generator.")
+        return _get_mock_test(phase_name, focus_skills, num_questions)
 
 
 # =========================================================================

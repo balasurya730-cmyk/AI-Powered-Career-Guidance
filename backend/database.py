@@ -410,6 +410,20 @@ def init_db():
         )
     """)
 
+    # ---------- GAMIFICATION: FRIENDS ----------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS friends (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            friend_id INTEGER NOT NULL,
+            status TEXT DEFAULT 'accepted',
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id, friend_id)
+        )
+    """)
+
     # ---------- GLOBAL A-Z CAREERS ----------
     cur.execute("""
         CREATE TABLE IF NOT EXISTS global_careers (
