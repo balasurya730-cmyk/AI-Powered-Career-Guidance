@@ -1251,3 +1251,11 @@ def _get_mock_interview_feedback(answer: str) -> dict:
         "improvements": ["Could use more specific industry examples", "Lacked a strong conclusion"],
         "ideal_answer": "An ideal answer would directly address the core of the question using the STAR method (Situation, Task, Action, Result) with specific metrics."
     }
+
+def _get_mock_interview_summary(qa_pairs: list) -> dict:
+    return {
+        "overall_score": 70,
+        "summary": "[AI coach unreachable - generic summary] You have completed the mock interview. You demonstrated a basic understanding of the required concepts, but there is room for improvement in providing specific, quantifiable examples.",
+        "strengths": ["Completed the interview", "Provided coherent answers"],
+        "improvements": ["Elaborate more on technical specifics", "Use the STAR method for behavioral questions"]
+    }
