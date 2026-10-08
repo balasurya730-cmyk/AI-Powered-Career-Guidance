@@ -1,4 +1,4 @@
-# AI Learning Planner & Career Advisor
+# An Intelligent Career Navigation System
 
 > **Reviewed & polished.** See [CHANGES.md](./CHANGES.md) for what was checked, tested, and fixed in this pass — including an important security note about your Gemini API key.
 
