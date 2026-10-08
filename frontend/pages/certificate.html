@@ -200,7 +200,7 @@
 
 
 
-<div class="certificate-wrapper">
+<div class="certificate-wrapper" id="certWrapper" style="display: none;">
   <div class="certificate-card">
     <h1 class="cert-header">Certificate of Completion</h1>
     <div class="cert-sub">Trailhead Learning Network</div>
@@ -235,29 +235,55 @@
   </div>
 </div>
 
+<div id="noCertMessage" style="display: none; text-align: center; margin: 100px auto; max-width: 600px;">
+  <h2 style="font-family: 'Spectral', serif; color: #12211D; font-size: 2rem;">No Certificate Available Yet!</h2>
+  <p style="color: #4a6058; font-size: 1.1rem; line-height: 1.6; margin-bottom: 30px;">
+    You haven't earned a Certificate of Completion for this trail. Complete all your learning phases and pass their respective tests to unlock your certificate.
+  </p>
+  <a href="phases.html" class="btn btn-primary" style="padding: 12px 30px; font-size: 1rem;">Go to Roadmap</a>
+</div>
+
 <script src="js/api.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", async () => {
     Auth.requireLogin();
     
     const params = new URLSearchParams(window.location.search);
-    const planId = params.get("plan_id");
+    let planId = params.get("plan_id");
     
-    if (!planId) {
-      alert("No learning plan ID specified.");
-      window.location.href = "phases.html";
-      return;
-    }
+    const certWrapper = document.getElementById("certWrapper");
+    const noCertMessage = document.getElementById("noCertMessage");
+
+    const showNoCert = () => {
+      certWrapper.style.display = "none";
+      noCertMessage.style.display = "block";
+    };
     
     try {
+      // If no planId was explicitly passed, try to find the user's latest learning plan
+      if (!planId) {
+        const plans = await apiRequest("/api/learning-plans");
+        if (plans && plans.length > 0) {
+          // Attempt to load the certificate for their most recent plan
+          planId = plans[0].id;
+        } else {
+          return showNoCert();
+        }
+      }
+
       const data = await apiRequest(`/api/certificate/${planId}`);
       document.getElementById("studentName").textContent = data.student_name;
       document.getElementById("careerGoal").textContent = data.career_name;
       document.getElementById("completedDate").textContent = data.completed_at;
       document.getElementById("verificationCode").textContent = data.certificate_code;
+      
+      // Successfully loaded, show certificate wrapper
+      certWrapper.style.display = "block";
+
     } catch (err) {
-      alert("Could not load certificate: " + err.message);
-      window.location.href = "phases.html";
+      // Typically means "You must complete all phases and pass their tests..."
+      console.warn("Could not load certificate:", err.message);
+      showNoCert();
     }
   });
 </script>
