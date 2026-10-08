@@ -54,6 +54,7 @@
     <p class="auth-sub">Pick up your trail where you left off.</p>
 
     <div class="form-error" id="errorBanner"></div>
+    <div id="redirectMsgBanner" style="display:none; background: rgba(59,130,246,0.13); border: 1px solid var(--trail); color: var(--fog); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.95rem; text-align: center;"></div>
 
     <form id="loginForm">
       <div class="field">
@@ -91,6 +92,15 @@
       mobileMenuBtn.addEventListener('click', () => {
         mobileMenu.classList.toggle('active');
       });
+    }
+
+    // Show redirect message if present in URL (e.g. from a protected page)
+    const params = new URLSearchParams(window.location.search);
+    const msg = params.get('msg');
+    if (msg) {
+      const banner = document.getElementById('redirectMsgBanner');
+      banner.textContent = '🔒 ' + msg;
+      banner.style.display = 'block';
     }
   });
 

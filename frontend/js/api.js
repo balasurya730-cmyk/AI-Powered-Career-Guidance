@@ -29,10 +29,14 @@ const Auth = {
   isLoggedIn() {
     return !!this.getToken();
   },
-  /* Call at the top of any page that requires login. Redirects to login.html if not authenticated. */
-  requireLogin() {
+  /* Call at the top of any page that requires login. Redirects to login.html if not authenticated.
+     Optionally pass a message to show on the login page. */
+  requireLogin(message = null) {
     if (!this.isLoggedIn()) {
-      window.location.href = "login.html";
+      const url = message
+        ? `login.html?msg=${encodeURIComponent(message)}`
+        : "login.html";
+      window.location.href = url;
     }
   },
   logout() {

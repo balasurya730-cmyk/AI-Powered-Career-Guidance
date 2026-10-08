@@ -9,7 +9,7 @@
    ========================================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
-  Auth.requireLogin();
+  Auth.requireLogin("You must log in to access the Career Advisor.");
 
   const errorBanner = document.getElementById("errorBanner");
   const questionForm = document.getElementById("questionForm");
