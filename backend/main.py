@@ -88,7 +88,14 @@ app = FastAPI(title="AI Learning Planner & Career Advisor")
 # CORS left open for local development. Tighten allow_origins for production.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:8000", 
+        "http://localhost:8001", 
+        "http://127.0.0.1:8000", 
+        "http://127.0.0.1:8001",
+        "https://ai-powered-career-guidance.onrender.com"
+    ],
+    allow_origin_regex="https://.*", # Allow any HTTPS origin for seamless cross-origin cookie auth on Render/Netlify
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -175,7 +182,8 @@ def register(payload: RegisterRequest, response: Response):
         key="alp_session",
         value=token,
         httponly=True,
-        samesite="lax",
+        samesite="none",
+        secure=True,
         max_age=1440 * 60,  # 24 hours
     )
     return TokenResponse(access_token="", user_id=user_id, name=payload.name, email=payload.email)
@@ -198,7 +206,8 @@ def login(payload: LoginRequest, response: Response):
         key="alp_session",
         value=token,
         httponly=True,
-        samesite="lax",
+        samesite="none",
+        secure=True,
         max_age=1440 * 60,
     )
     return TokenResponse(access_token="", user_id=row["id"], name=row["name"], email=row["email"])
@@ -252,7 +261,8 @@ def google_auth(payload: GoogleAuthRequest, response: Response):
             key="alp_session",
             value=token,
             httponly=True,
-            samesite="lax",
+            samesite="none",
+            secure=True,
             max_age=1440 * 60,
         )
         return TokenResponse(access_token="", user_id=row["id"], name=row["name"], email=row["email"])
@@ -264,7 +274,7 @@ def google_auth(payload: GoogleAuthRequest, response: Response):
 @app.post("/api/logout", tags=["Auth"])
 def logout(response: Response):
     """Clears the HTTP-only session cookie."""
-    response.delete_cookie(key="alp_session", httponly=True, samesite="lax")
+    response.delete_cookie(key="alp_session", httponly=True, samesite="none", secure=True)
     return {"message": "Successfully logged out"}
 
 
