@@ -23,6 +23,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class GoogleAuthRequest(BaseModel):
+    credential: str
+
+
+
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 

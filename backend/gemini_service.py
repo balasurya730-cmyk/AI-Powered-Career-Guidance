@@ -654,7 +654,7 @@ Student's new message: {message}
         return _call_gemini_with_hard_timeout(prompt, "ai_chat").strip()
     except Exception as e:
         print(f"[gemini_service] Gemini chat call failed: {e}. Falling back to error display.")
-        return f"⚠️ **API Error**: The AI is currently unavailable because your API keys have run out of credits or quota.\n\n_System Details: {str(e)}_\n\nPlease update your `.env` file with a working API key that has credits remaining to continue chatting!"
+        return "⚠️ I cannot have the right access to get the information right now. Please try again later."
 
 
 # =========================================================================
@@ -1045,11 +1045,11 @@ def _get_mock_chat_reply(message: str, profile: dict | None) -> str:
         return f"That's an interesting point. While I process the details of '{message[:30]}...', I suggest you continue exploring your Learning Planner or check out the Skill Gap analyzer for more insights!"
 
 
-def chat_with_ai(prompt: str, history: list) -> dict:
+def chat_with_ai(prompt: str, history: list, user_name: str = "Unknown") -> dict:
     """
     A direct chat endpoint for the @ai mentor in group chats.
     """
-    system_prompt = "You are the AI Mentor for a study group. Give a very short, helpful, and encouraging answer to the user's message."
+    system_prompt = f"You are the AI Mentor for a study group. You are currently replying to a user named {user_name}. Give a very short, helpful, and encouraging answer to the user's message."
     history_text = "\n".join([f"{msg['sender_name']}: {msg['message']}" for msg in history[-10:]]) if history else "No previous messages."
     
     lower_prompt = prompt.lower()

@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=2">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="page-fade">
 
@@ -67,6 +68,12 @@
       <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Log in</button>
     </form>
 
+    <div class="auth-divider" style="text-align: center; margin: 24px 0; position: relative;">
+      <hr style="border: 0; border-top: 1px solid var(--line); margin: 0;">
+      <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--pine-900); padding: 0 10px; color: var(--stone); font-size: 0.9rem;">or</span>
+    </div>
+    <div id="googleAuthContainer" style="display:flex; justify-content:center; margin-bottom:16px; min-height: 40px;"></div>
+
     <p class="hint text-center" style="margin-top:16px;">Demo login: demo@student.com / demo1234 (after running seed_data.py)</p>
     <div class="auth-switch">New here? <a href="register.html">Create an account</a></div>
   </div>
@@ -84,6 +91,51 @@
       mobileMenuBtn.addEventListener('click', () => {
         mobileMenu.classList.toggle('active');
       });
+    }
+  });
+
+  async function handleGoogleLogin(response) {
+    try {
+      const result = await apiRequest("/api/auth/google", {
+        method: "POST",
+        body: { credential: response.credential },
+        skipAuth: true
+      });
+      Auth.setSession(result.access_token, { id: result.user_id, name: result.name, email: result.email });
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      const errorBanner = document.getElementById('errorBanner');
+      errorBanner.textContent = err.message || 'Google Sign-In failed';
+      errorBanner.classList.add('visible');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const config = await apiRequest('/api/config', { skipAuth: true });
+      if (config && config.google_client_id && config.google_client_id !== "YOUR_GOOGLE_CLIENT_ID_HERE") {
+        
+        function initGoogle() {
+          if (typeof google === 'undefined' || !google.accounts) {
+            setTimeout(initGoogle, 100);
+            return;
+          }
+          google.accounts.id.initialize({
+            client_id: config.google_client_id,
+            callback: handleGoogleLogin
+          });
+          google.accounts.id.renderButton(
+            document.getElementById("googleAuthContainer"),
+            { theme: "filled_blue", size: "large", width: 330, shape: "pill" }
+          );
+        }
+        initGoogle();
+
+      } else {
+        document.getElementById("googleAuthContainer").innerHTML = '<p class="hint" style="color:var(--stone)">Google Login is not configured. Add GOOGLE_CLIENT_ID.</p>';
+      }
+    } catch (err) {
+      console.warn("Failed to load Google config", err);
     }
   });
 </script>

@@ -32,7 +32,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from database import init_db, get_connection
 from models import (
-    RegisterRequest, LoginRequest, TokenResponse,
+    RegisterRequest, LoginRequest, GoogleAuthRequest, TokenResponse,
     ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest,
     ProfileRequest, ProfileResponse,
     CareerAdvisorQuestionsRequest, CareerRecommendationResponse,
@@ -64,6 +64,11 @@ from auth_utils import hash_password, verify_password, create_access_token, get_
 import gemini_service
 import sqlite3
 from datetime import datetime, timedelta, date
+
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID_HERE")
 
 app = FastAPI(title="AI Learning Planner & Career Advisor")
 
@@ -170,6 +175,56 @@ def login(payload: LoginRequest):
 
     token = create_access_token(row["id"], row["email"])
     return TokenResponse(access_token=token, user_id=row["id"], name=row["name"], email=row["email"])
+
+
+@app.get("/api/config", tags=["Config"])
+def get_config():
+    """Return public configuration values to the frontend."""
+    return {"google_client_id": GOOGLE_CLIENT_ID}
+
+
+@app.post("/api/auth/google", response_model=TokenResponse, tags=["Auth"])
+def google_auth(payload: GoogleAuthRequest):
+    """Verify Google token, login or create new user."""
+    try:
+        id_info = id_token.verify_oauth2_token(
+            payload.credential, google_requests.Request(), GOOGLE_CLIENT_ID
+        )
+        email = id_info.get("email")
+        name = id_info.get("name", "Google User")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Google token did not contain an email.")
+
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, email FROM users WHERE email = ?", (email,))
+        row = cur.fetchone()
+
+        if not row:
+            # User doesn't exist, create a new one
+            # Use a random password since they login via Google
+            dummy_password = secrets.token_urlsafe(32)
+            password_hash = hash_password(dummy_password)
+            student_code = f"STU-{secrets.token_hex(4).upper()}"
+            
+            cur.execute(
+                "INSERT INTO users (name, email, password_hash, role, student_code) VALUES (?, ?, ?, ?, ?)",
+                (name, email, password_hash, "student", student_code),
+            )
+            conn.commit()
+            user_id = cur.lastrowid
+            
+            cur.execute("SELECT id, name, email FROM users WHERE id = ?", (user_id,))
+            row = cur.fetchone()
+            
+        conn.close()
+
+        token = create_access_token(row["id"], row["email"])
+        return TokenResponse(access_token=token, user_id=row["id"], name=row["name"], email=row["email"])
+
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google token.")
 
 
 RESET_TOKEN_EXPIRE_MINUTES = 30
@@ -2402,7 +2457,7 @@ async def websocket_group_chat(websocket: WebSocket, group_id: int, token: str =
                     conn.close()
 
                     from fastapi.concurrency import run_in_threadpool
-                    ai_reply_dict = await run_in_threadpool(gemini_service.chat_with_ai, data, history)
+                    ai_reply_dict = await run_in_threadpool(gemini_service.chat_with_ai, data, history, user_name)
                     ai_reply = ai_reply_dict.get("reply", "No response.")
                     
                     conn = get_connection()

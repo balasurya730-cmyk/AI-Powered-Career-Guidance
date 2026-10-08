@@ -55,3 +55,5 @@ env.bak/
 # Database files
 *.db
 
+
+backend/test_*.py
