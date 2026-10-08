@@ -236,7 +236,7 @@ python tests/e2e_test.py
 ## 10. Security notes
 
 - Passwords are hashed with bcrypt (via `passlib`) — never stored in plain text.
-- Login sessions use signed JWTs with an expiry (`JWT_EXPIRE_MINUTES`).
+- Login sessions use signed JWTs stored securely in an **HTTP-Only, SameSite=Lax Cookie**. This prevents client-side JavaScript from accessing the token, effectively neutralizing XSS token theft.
 - `JWT_SECRET_KEY` should be a long, random string in any real deployment —
   never commit your real `.env` file to version control (it's already in
   `.gitignore`).
