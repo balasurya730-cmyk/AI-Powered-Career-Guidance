@@ -48,6 +48,30 @@ def init_db():
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
             role TEXT,
+            phone TEXT,
+            email_verified INTEGER DEFAULT 0,
+            phone_verified INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+    # Add phone/verified columns if upgrading from older schema
+    for col, defval in [("phone", "NULL"), ("email_verified", "0"), ("phone_verified", "0")]:
+        try:
+            cur.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT DEFAULT {defval}")
+        except Exception:
+            pass
+
+    # ---------- OTP TOKENS (pending registrations) ----------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS otp_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            name TEXT NOT NULL,
+            password_hash TEXT NOT NULL,
+            email_otp TEXT NOT NULL,
+            phone_otp TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
             created_at TEXT DEFAULT (datetime('now'))
         )
     """)

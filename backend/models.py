@@ -27,6 +27,19 @@ class GoogleAuthRequest(BaseModel):
     credential: str
 
 
+class SendOtpRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=6, max_length=100)
+    phone: str = Field(..., min_length=7, max_length=20)
+
+
+class VerifyOtpRequest(BaseModel):
+    email: EmailStr
+    email_otp: str
+    phone_otp: str
+
+
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr

@@ -32,7 +32,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from database import init_db, get_connection
 from models import (
-    RegisterRequest, LoginRequest, GoogleAuthRequest, TokenResponse,
+    RegisterRequest, LoginRequest, GoogleAuthRequest,
+    SendOtpRequest, VerifyOtpRequest, TokenResponse,
     ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest,
     ProfileRequest, ProfileResponse,
     CareerAdvisorQuestionsRequest, CareerRecommendationResponse,
@@ -69,6 +70,18 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID_HERE")
+
+# Twilio SMS config (optional - falls back to log if not configured)
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN  = os.getenv("TWILIO_AUTH_TOKEN", "")
+TWILIO_PHONE_FROM  = os.getenv("TWILIO_PHONE_FROM", "")
+
+# SMTP config for email OTP
+SMTP_HOST     = os.getenv("SMTP_HOST", "")
+SMTP_PORT     = int(os.getenv("SMTP_PORT", 587))
+SMTP_USER     = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM_OTP = os.getenv("SMTP_FROM", SMTP_USER)
 
 app = FastAPI(title="AI Learning Planner & Career Advisor")
 
@@ -229,6 +242,142 @@ def google_auth(payload: GoogleAuthRequest):
 
 RESET_TOKEN_EXPIRE_MINUTES = 30
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8000")
+
+OTP_EXPIRE_MINUTES = 10
+
+
+def _send_email_otp(to_email: str, name: str, otp: str):
+    """Send OTP via SMTP. Falls back to console log if SMTP not configured."""
+    subject = "Your Trailhead Verification Code"
+    body = (
+        f"Hi {name},\n\n"
+        f"Your email verification code is:\n\n"
+        f"  {otp}\n\n"
+        f"This code expires in {OTP_EXPIRE_MINUTES} minutes.\n\n"
+        f"If you didn't request this, please ignore this message.\n\n"
+        f"— Trailhead Team"
+    )
+    if not SMTP_HOST or not SMTP_USER or not SMTP_PASSWORD:
+        print(f"[OTP] EMAIL OTP for {to_email}: {otp}  (SMTP not configured — shown in logs only)")
+        return
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = subject
+        msg["From"] = SMTP_FROM_OTP
+        msg["To"] = to_email
+        msg.set_content(body)
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as srv:
+            srv.starttls()
+            srv.login(SMTP_USER, SMTP_PASSWORD)
+            srv.send_message(msg)
+    except Exception as e:
+        print(f"[OTP] Failed to send email OTP: {e} — OTP is: {otp}")
+
+
+def _send_sms_otp(to_phone: str, otp: str):
+    """Send OTP via Twilio SMS. Falls back to console log if not configured."""
+    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN or not TWILIO_PHONE_FROM:
+        print(f"[OTP] SMS OTP for {to_phone}: {otp}  (Twilio not configured — shown in logs only)")
+        return
+    try:
+        from twilio.rest import Client as TwilioClient
+        client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        client.messages.create(
+            body=f"Your Trailhead verification code is: {otp}  (expires in {OTP_EXPIRE_MINUTES} min)",
+            from_=TWILIO_PHONE_FROM,
+            to=to_phone,
+        )
+    except Exception as e:
+        print(f"[OTP] Failed to send SMS OTP: {e} — OTP is: {otp}")
+
+
+@app.post("/api/auth/send-otp", tags=["Auth"])
+def send_otp(payload: SendOtpRequest):
+    """Step 1 of OTP registration: validate input, generate OTPs, send them."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Check email not already taken
+    cur.execute("SELECT id FROM users WHERE email = ?", (payload.email,))
+    if cur.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please log in instead.")
+
+    # Clean up any previous OTP attempts for this email
+    cur.execute("DELETE FROM otp_tokens WHERE email = ?", (payload.email,))
+
+    email_otp = str(secrets.randbelow(900000) + 100000)   # 6-digit
+    phone_otp  = str(secrets.randbelow(900000) + 100000)
+    expires_at = (datetime.utcnow() + timedelta(minutes=OTP_EXPIRE_MINUTES)).isoformat()
+    password_hash = hash_password(payload.password)
+
+    cur.execute(
+        """INSERT INTO otp_tokens (email, phone, name, password_hash, email_otp, phone_otp, expires_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (payload.email, payload.phone, payload.name, password_hash, email_otp, phone_otp, expires_at),
+    )
+    conn.commit()
+    conn.close()
+
+    _send_email_otp(payload.email, payload.name, email_otp)
+    _send_sms_otp(payload.phone, phone_otp)
+
+    return {"message": "OTP sent to your email and phone. Please verify within 10 minutes."}
+
+
+@app.post("/api/auth/verify-otp", response_model=TokenResponse, tags=["Auth"])
+def verify_otp(payload: VerifyOtpRequest):
+    """Step 2 of OTP registration: verify both OTPs and create the account."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT * FROM otp_tokens WHERE email = ? ORDER BY id DESC LIMIT 1",
+        (payload.email,),
+    )
+    row = cur.fetchone()
+
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=400, detail="No pending registration found. Please start over.")
+
+    # Check expiry
+    if datetime.utcnow() > datetime.fromisoformat(row["expires_at"]):
+        cur.execute("DELETE FROM otp_tokens WHERE email = ?", (payload.email,))
+        conn.commit()
+        conn.close()
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
+
+    # Validate OTPs
+    if row["email_otp"] != payload.email_otp.strip():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Incorrect email OTP. Please try again.")
+    if row["phone_otp"] != payload.phone_otp.strip():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Incorrect phone OTP. Please try again.")
+
+    # Create the user
+    student_code = f"STU-{secrets.token_hex(4).upper()}"
+    try:
+        cur.execute(
+            "INSERT INTO users (name, email, password_hash, role, phone, email_verified, phone_verified, student_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (row["name"], row["email"], row["password_hash"], "student", row["phone"], 1, 1, student_code),
+        )
+        conn.commit()
+        user_id = cur.lastrowid
+    except Exception:
+        conn.close()
+        raise HTTPException(status_code=400, detail="An account with this email already exists.")
+
+    # Remove the OTP token
+    cur.execute("DELETE FROM otp_tokens WHERE email = ?", (payload.email,))
+    conn.commit()
+    conn.close()
+
+    token = create_access_token(user_id, payload.email)
+    return TokenResponse(access_token=token, user_id=user_id, name=row["name"], email=payload.email)
+
+
 
 
 @app.post("/api/auth/forgot-password", response_model=ForgotPasswordResponse, tags=["Auth"])
