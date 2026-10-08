@@ -69,19 +69,20 @@ class TokenResponse(BaseModel):
 # ---------------- STUDENT PROFILE ----------------
 
 class ProfileRequest(BaseModel):
-    name: str
-    education: str
-    department: str
-    college: str
-    current_year: str
-    skills: str            # comma separated string, e.g. "Python, HTML, CSS"
-    interests: str          # comma separated string, e.g. "Web Dev, AI, Robotics"
-    daily_study_hours: float
+    name: Optional[str] = ""
+    education: Optional[str] = ""
+    department: Optional[str] = ""
+    college: Optional[str] = ""
+    current_year: Optional[str] = ""
+    skills: Optional[str] = ""            # comma separated string, e.g. "Python, HTML, CSS"
+    interests: Optional[str] = ""          # comma separated string, e.g. "Web Dev, AI, Robotics"
+    daily_study_hours: Optional[float] = 2.0
     career_goal: Optional[str] = None   # optional - if empty, AI advisor kicks in
 
 
 class ProfileResponse(ProfileRequest):
     user_id: int
+
 
 
 # ---------------- NETWORKING & SEARCH ----------------

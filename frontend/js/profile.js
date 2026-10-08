@@ -41,15 +41,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Saving...";
 
+    const hoursInput = document.getElementById("daily_study_hours").value;
+    const parsedHours = parseFloat(hoursInput);
+
     const payload = {
-      name: document.getElementById("name").value.trim(),
-      education: document.getElementById("education").value,
-      department: document.getElementById("department").value.trim(),
-      college: document.getElementById("college").value.trim(),
-      current_year: document.getElementById("current_year").value,
-      skills: document.getElementById("skills").value.trim(),
-      interests: document.getElementById("interests").value.trim(),
-      daily_study_hours: parseFloat(document.getElementById("daily_study_hours").value),
+      name: document.getElementById("name").value.trim() || (Auth.getUser() ? Auth.getUser().name : "Student"),
+      education: document.getElementById("education").value || "Other",
+      department: document.getElementById("department").value.trim() || "General",
+      college: document.getElementById("college").value.trim() || "College",
+      current_year: document.getElementById("current_year").value || "1st Year",
+      skills: document.getElementById("skills").value.trim() || "General",
+      interests: document.getElementById("interests").value.trim() || "General",
+      daily_study_hours: isNaN(parsedHours) || parsedHours <= 0 ? 2.0 : parsedHours,
       career_goal: document.getElementById("career_goal").value.trim() || null,
     };
 
@@ -60,7 +63,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         window.location.href = saved.career_goal ? "learning-planner.html" : "career-advisor.html";
       }, 600);
     } catch (err) {
-      showBanner(errorBanner, err.message);
+      if (err.message && (err.message.includes("log in") || err.message.includes("Invalid or expired session"))) {
+        Auth.logout();
+        return;
+      }
+      showBanner(errorBanner, err.message || "Failed to save profile. Please try again.");
       submitBtn.disabled = false;
       submitBtn.textContent = "Save profile & continue";
     }

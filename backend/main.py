@@ -458,32 +458,65 @@ def save_profile(payload: ProfileRequest, user_id: int = Depends(get_current_use
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT id FROM student_profiles WHERE user_id = ?", (user_id,))
-    existing = cur.fetchone()
+    # Validate that user exists in users table
+    cur.execute("SELECT id, name FROM users WHERE id = ?", (user_id,))
+    user_row = cur.fetchone()
+    if not user_row:
+        conn.close()
+        raise HTTPException(status_code=401, detail="User account not found. Please log in again.")
 
-    if existing:
-        cur.execute("""
-            UPDATE student_profiles
-            SET name=?, education=?, department=?, college=?, current_year=?,
-                skills=?, interests=?, daily_study_hours=?, career_goal=?,
-                updated_at=datetime('now')
-            WHERE user_id=?
-        """, (payload.name, payload.education, payload.department, payload.college,
-              payload.current_year, payload.skills, payload.interests,
-              payload.daily_study_hours, payload.career_goal, user_id))
-    else:
-        cur.execute("""
-            INSERT INTO student_profiles
-                (user_id, name, education, department, college, current_year,
-                 skills, interests, daily_study_hours, career_goal)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, payload.name, payload.education, payload.department, payload.college,
-              payload.current_year, payload.skills, payload.interests,
-              payload.daily_study_hours, payload.career_goal))
+    try:
+        cur.execute("SELECT id FROM student_profiles WHERE user_id = ?", (user_id,))
+        existing = cur.fetchone()
 
-    conn.commit()
+        name_val = payload.name or user_row["name"] or "Student"
+        education_val = payload.education or ""
+        department_val = payload.department or ""
+        college_val = payload.college or ""
+        current_year_val = payload.current_year or ""
+        skills_val = payload.skills or ""
+        interests_val = payload.interests or ""
+        hours_val = payload.daily_study_hours if payload.daily_study_hours is not None else 2.0
+        career_val = payload.career_goal or None
+
+        if existing:
+            cur.execute("""
+                UPDATE student_profiles
+                SET name=?, education=?, department=?, college=?, current_year=?,
+                    skills=?, interests=?, daily_study_hours=?, career_goal=?,
+                    updated_at=datetime('now')
+                WHERE user_id=?
+            """, (name_val, education_val, department_val, college_val,
+                  current_year_val, skills_val, interests_val,
+                  hours_val, career_val, user_id))
+        else:
+            cur.execute("""
+                INSERT INTO student_profiles
+                    (user_id, name, education, department, college, current_year,
+                     skills, interests, daily_study_hours, career_goal)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, name_val, education_val, department_val, college_val,
+                  current_year_val, skills_val, interests_val,
+                  hours_val, career_val))
+
+        conn.commit()
+    except Exception as e:
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"Failed to save profile: {e}")
+
     conn.close()
-    return ProfileResponse(user_id=user_id, **payload.dict())
+    return ProfileResponse(
+        user_id=user_id,
+        name=name_val,
+        education=education_val,
+        department=department_val,
+        college=college_val,
+        current_year=current_year_val,
+        skills=skills_val,
+        interests=interests_val,
+        daily_study_hours=hours_val,
+        career_goal=career_val
+    )
 
 
 @app.get("/api/profile", response_model=ProfileResponse, tags=["Profile"])
@@ -499,11 +532,18 @@ def get_profile(user_id: int = Depends(get_current_user_id)):
         raise HTTPException(status_code=404, detail="No profile found yet. Please create one first.")
 
     return ProfileResponse(
-        user_id=user_id, name=row["name"], education=row["education"],
-        department=row["department"], college=row["college"], current_year=row["current_year"],
-        skills=row["skills"], interests=row["interests"],
-        daily_study_hours=row["daily_study_hours"], career_goal=row["career_goal"],
+        user_id=user_id,
+        name=row["name"] or "",
+        education=row["education"] or "",
+        department=row["department"] or "",
+        college=row["college"] or "",
+        current_year=row["current_year"] or "",
+        skills=row["skills"] or "",
+        interests=row["interests"] or "",
+        daily_study_hours=row["daily_study_hours"] or 2.0,
+        career_goal=row["career_goal"],
     )
+
 
 
 def _get_profile_dict(user_id: int) -> dict:
