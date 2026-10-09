@@ -1737,8 +1737,23 @@ def _activate_phase(cur, phase_row):
     due dates spread one-per-week across the phase, and flips its status to
     'active'. Called when a phase first becomes reachable.
     """
-    weekly_tasks = json.loads(phase_row["weekly_tasks"] or "[]")
+    weekly_tasks = json.loads(phase_row.get("weekly_tasks") or "[]")
+    daily_habits = json.loads(phase_row.get("daily_habits") or "[]")
+    monthly_milestone = phase_row.get("monthly_milestone")
+    project_brief = phase_row.get("project_brief")
+    
     start = datetime.utcnow().date()
+    
+    # 1. Daily Habits
+    for i, task in enumerate(daily_habits):
+        due = start + timedelta(days=1)
+        status = 'available' if i == 0 else 'locked'
+        cur.execute("""
+            INSERT INTO progress (user_id, learning_plan_id, task_name, task_type, phase_id, due_date, status)
+            VALUES (?, ?, ?, 'daily', ?, ?, ?)
+        """, (phase_row["user_id"], phase_row["learning_plan_id"], task, phase_row["id"], due.isoformat(), status))
+
+    # 2. Weekly Tasks
     for i, task in enumerate(weekly_tasks):
         due = start + timedelta(weeks=i + 1)
         status = 'available' if i == 0 else 'locked'
@@ -1746,6 +1761,22 @@ def _activate_phase(cur, phase_row):
             INSERT INTO progress (user_id, learning_plan_id, task_name, task_type, phase_id, due_date, status)
             VALUES (?, ?, ?, 'weekly', ?, ?, ?)
         """, (phase_row["user_id"], phase_row["learning_plan_id"], task, phase_row["id"], due.isoformat(), status))
+        
+    # 3. Monthly Milestone
+    if monthly_milestone:
+        due = start + timedelta(days=30)
+        cur.execute("""
+            INSERT INTO progress (user_id, learning_plan_id, task_name, task_type, phase_id, due_date, status)
+            VALUES (?, ?, ?, 'monthly', ?, ?, 'available')
+        """, (phase_row["user_id"], phase_row["learning_plan_id"], monthly_milestone, phase_row["id"], due.isoformat()))
+        
+    # 4. Project Brief
+    if project_brief:
+        due = start + timedelta(weeks=phase_row.get("duration_weeks", 4))
+        cur.execute("""
+            INSERT INTO progress (user_id, learning_plan_id, task_name, task_type, phase_id, due_date, status)
+            VALUES (?, ?, ?, 'project', ?, ?, 'available')
+        """, (phase_row["user_id"], phase_row["learning_plan_id"], project_brief, phase_row["id"], due.isoformat()))
     cur.execute(
         "UPDATE phases SET status='active', start_date=?, end_date=? WHERE id=?",
         (start.isoformat(), (start + timedelta(weeks=len(weekly_tasks) or phase_row["duration_weeks"])).isoformat(), phase_row["id"]),
@@ -1800,13 +1831,13 @@ def generate_phases(payload: GeneratePhasesRequest, user_id: int = Depends(get_c
     for i, ph in enumerate(phases):
         cur.execute("""
             INSERT INTO phases (user_id, learning_plan_id, phase_order, phase_name, description,
-                                 duration_weeks, focus_skills, weekly_tasks, project_brief, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                 duration_weeks, focus_skills, daily_habits, weekly_tasks, monthly_milestone, project_brief, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             user_id, payload.learning_plan_id, i + 1, ph.get("phase_name", f"Phase {i+1}"),
             ph.get("description", ""), ph.get("duration_weeks", 4),
-            json.dumps(ph.get("focus_skills", [])), json.dumps(ph.get("weekly_tasks", [])),
-            ph.get("project_brief", ""), "locked",
+            json.dumps(ph.get("focus_skills", [])), json.dumps(ph.get("daily_habits", [])), json.dumps(ph.get("weekly_tasks", [])),
+            ph.get("monthly_milestone", ""), ph.get("project_brief", ""), "locked",
         ))
 
     cur.execute("SELECT * FROM phases WHERE learning_plan_id = ? ORDER BY phase_order", (payload.learning_plan_id,))

@@ -826,8 +826,34 @@ def _get_mock_careers(profile: dict, extra: dict | None = None) -> list[dict]:
 
 def _get_mock_phases(profile: dict, career_name: str) -> list[dict]:
     """Honest fallback: a realistic 4-phase curriculum, used only when Gemini is unreachable."""
-    def weeks(n):
-        return [f"Week {i+1}: build on the previous week's fundamentals with hands-on practice" for i in range(n)]
+    def weeks(n, phase_num):
+        if phase_num == 1:
+            tasks = [
+                "Week 1: Setup development environment and master basic syntax.",
+                "Week 2: Practice core logic, conditional statements, and loops.",
+                "Week 3: Dive deep into functions, parameters, and error handling.",
+                "Week 4: Learn fundamental data structures like arrays and objects.",
+                "Week 5: Master basic file operations and external data formats (JSON).",
+                "Week 6: Explore standard libraries and third-party package managers.",
+                "Week 7: Understand Git basics: commit, branch, merge, and push.",
+                "Week 8: Review core concepts and fix bugs in simple applications.",
+                "Week 9: Learn debugging tools and how to read stack traces.",
+                "Week 10: Optimize beginner code for readability."
+            ]
+        else:
+            tasks = [
+                "Week 1: Set up core framework architectures and project scaffolding.",
+                "Week 2: Implement advanced routing and component state.",
+                "Week 3: Connect to a database and perform basic CRUD operations.",
+                "Week 4: Implement secure user authentication (JWT/OAuth).",
+                "Week 5: Write robust unit tests and ensure code coverage.",
+                "Week 6: Integrate with third-party APIs and handle asynchronous data.",
+                "Week 7: Advanced state management and performance optimization.",
+                "Week 8: Prepare application for production deployment.",
+                "Week 9: Set up CI/CD pipelines and automated testing.",
+                "Week 10: Final review and launch."
+            ]
+        return tasks[:n] if n <= 10 else tasks + [f"Week {i+1}: Continued advanced practice" for i in range(10, n)]
 
     return [
         {
@@ -836,7 +862,7 @@ def _get_mock_phases(profile: dict, career_name: str) -> list[dict]:
             "duration_weeks": 8,
             "focus_skills": ["Fundamentals & syntax", "Command line basics", "Version control (Git)"],
             "daily_habits": ["Read documentation for 20 mins", "Write 5 lines of code minimum"],
-            "weekly_tasks": weeks(8),
+            "weekly_tasks": weeks(8, 1),
             "monthly_milestone": "Comfortably write simple, working scripts to automate small tasks.",
             "project_brief": "Build a small standalone tool or script that uses everything covered this phase, pushed to a public GitHub repo.",
         },
@@ -846,7 +872,7 @@ def _get_mock_phases(profile: dict, career_name: str) -> list[dict]:
             "duration_weeks": 10,
             "focus_skills": ["Core frameworks/libraries", "Data structures in practice", "Debugging & testing basics"],
             "daily_habits": ["Review someone else's code", "Solve 1 easy algorithm problem"],
-            "weekly_tasks": weeks(10),
+            "weekly_tasks": weeks(10, 2),
             "monthly_milestone": "Understand how components interact and data flows in a multi-file project.",
             "project_brief": "Build a multi-file application with at least one external data source or API integration.",
         },
@@ -856,7 +882,7 @@ def _get_mock_phases(profile: dict, career_name: str) -> list[dict]:
             "duration_weeks": 8,
             "focus_skills": ["Advanced frameworks", "Databases", "Deployment basics"],
             "daily_habits": ["Read system design case studies", "Optimize a piece of code"],
-            "weekly_tasks": weeks(8),
+            "weekly_tasks": weeks(8, 3),
             "monthly_milestone": "Deploy a working backend and frontend that communicates with a live database.",
             "project_brief": "Build and deploy a full application with a working database and a live/deployed link.",
         },
@@ -866,7 +892,7 @@ def _get_mock_phases(profile: dict, career_name: str) -> list[dict]:
             "duration_weeks": 6,
             "focus_skills": ["Portfolio polish", "System design basics", "Interview prep"],
             "daily_habits": ["Apply to 2 jobs", "Practice speaking out loud about technical concepts"],
-            "weekly_tasks": weeks(6),
+            "weekly_tasks": weeks(6, 4),
             "monthly_milestone": "Complete an impressive online presence and ace mock interviews.",
             "project_brief": "Polish your best 2 projects with README documentation and deploy a personal portfolio site.",
         },
