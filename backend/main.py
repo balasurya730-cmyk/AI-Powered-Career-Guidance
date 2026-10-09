@@ -1736,8 +1736,8 @@ def _activate_phase(cur, phase_row):
     for i, task in enumerate(weekly_tasks):
         due = start + timedelta(weeks=i + 1)
         cur.execute("""
-            INSERT INTO progress (user_id, learning_plan_id, task_name, task_type, phase_id, due_date)
-            VALUES (?, ?, ?, 'weekly', ?, ?)
+            INSERT INTO progress (user_id, learning_plan_id, task_name, task_type, phase_id, due_date, status)
+            VALUES (?, ?, ?, 'weekly', ?, ?, 'available')
         """, (phase_row["user_id"], phase_row["learning_plan_id"], task, phase_row["id"], due.isoformat()))
     cur.execute(
         "UPDATE phases SET status='active', start_date=?, end_date=? WHERE id=?",
