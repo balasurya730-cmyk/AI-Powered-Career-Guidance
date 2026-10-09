@@ -95,7 +95,12 @@
         </div>
         <div class="field">
           <label for="phone">Phone Number</label>
-          <input type="tel" id="phone" placeholder="+91 9876543210" required>
+          <div class="phone-input-wrap" style="display: flex; align-items: center; background: rgba(0,0,0,0.2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; transition: all 0.3s ease;">
+            <div class="country-code" style="padding: 14px 12px 14px 16px; background: rgba(255,255,255,0.05); color: var(--stone); border-right: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.9rem; user-select: none;">
+              🇮🇳 +91
+            </div>
+            <input type="tel" id="phone" placeholder="98765 43210" required style="border: none; background: transparent; box-shadow: none; border-radius: 0; outline: none;">
+          </div>
         </div>
         <div class="field">
           <label for="password">Password</label>
@@ -187,7 +192,7 @@
       const result = await apiRequest("/api/auth/google", {
         method: "POST", body: { credential: response.credential }, skipAuth: true
       });
-      Auth.setSession(result.access_token, { id: result.user_id, name: result.name, email: result.email });
+      Auth.setSession({ id: result.user_id, name: result.name, email: result.email });
       window.location.href = "dashboard.html";
     } catch (err) {
       document.getElementById('errorBanner').textContent = err.message || 'Google Sign-In failed';
@@ -198,7 +203,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       const config = await apiRequest('/api/config', { skipAuth: true });
-      if (config && config.google_client_id && config.google_client_id !== "YOUR_GOOGLE_CLIENT_ID_HERE") {
+      if (config && config.google_client_id && config.google_client_id !== "YOUR_GOOGLE_CLIENT_ID_HERE" && config.google_client_id !== "your_google_client_id_here") {
         function initGoogle() {
           if (typeof google === 'undefined' || !google.accounts) { setTimeout(initGoogle, 100); return; }
           google.accounts.id.initialize({ client_id: config.google_client_id, callback: handleGoogleLogin });

@@ -420,7 +420,7 @@ a { color: inherit; }
 
 
 input[type="text"], input[type="email"], input[type="password"],
-input[type="number"], select, textarea {
+input[type="number"], input[type="tel"], select, textarea {
   width: 100%;
   font-family: var(--font-body);
   font-size: 0.95rem;
@@ -436,6 +436,12 @@ input:focus, select:focus, textarea:focus {
   background: rgba(0, 0, 0, 0.4);
   border-color: var(--trail);
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+.phone-input-wrap:focus-within {
+  border-color: var(--trail) !important;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
+  background: rgba(0, 0, 0, 0.4) !important;
 }
 
 
