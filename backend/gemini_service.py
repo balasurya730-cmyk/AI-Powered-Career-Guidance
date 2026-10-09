@@ -260,8 +260,16 @@ def generate_phased_roadmap(profile: dict, career_name: str, missing_skills: lis
     Intermediate" - 3 months), each with its own weekly tasks and a phase-end
     project brief. This is what actually makes month-by-month gating possible.
     """
-    missing_text = f"- Missing Skills to Learn: {', '.join(missing_skills)}" if missing_skills else "- Missing Skills to Learn: Not provided, use general career requirements."
-    missing_skills_list = missing_skills if missing_skills else ["general skills for " + career_name]
+    if missing_skills and isinstance(missing_skills, list):
+        if isinstance(missing_skills[0], dict):
+            missing_skills_str_list = [str(s.get('skill', '')) for s in missing_skills]
+        else:
+            missing_skills_str_list = [str(s) for s in missing_skills]
+    else:
+        missing_skills_str_list = []
+        
+    missing_text = f"- Missing Skills to Learn: {', '.join(missing_skills_str_list)}" if missing_skills_str_list else "- Missing Skills to Learn: Not provided, use general career requirements."
+    missing_skills_list = missing_skills_str_list if missing_skills_str_list else ["general skills for " + career_name]
     
     prompt = f"""
 You are an expert learning coach designing a REALISTIC, multi-phase curriculum
