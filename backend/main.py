@@ -2639,8 +2639,14 @@ manager = ConnectionManager()
 from auth_utils import decode_access_token
 
 @app.websocket("/ws/groups/{group_id}")
-async def websocket_group_chat(websocket: WebSocket, group_id: int, token: str = Query(...)):
-    payload = decode_access_token(token)
+async def websocket_group_chat(websocket: WebSocket, group_id: int, token: Optional[str] = Query(None)):
+    cookie_token = websocket.cookies.get("alp_session")
+    active_token = token or cookie_token
+    if not active_token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+        
+    payload = decode_access_token(active_token)
     if not payload:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return

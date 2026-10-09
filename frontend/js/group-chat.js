@@ -112,12 +112,10 @@ function connectWebSocket(groupId) {
         ws.close();
     }
     
-    const token = Auth.getToken();
-    if (!token) return;
-    
+    // Cookie is sent automatically by the browser with the WebSocket request
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsHost = window.location.protocol === "file:" ? "localhost:8000" : window.location.host;
-    const wsUrl = `${wsProtocol}//${wsHost}/ws/groups/${groupId}?token=${token}`;
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/groups/${groupId}`;
     ws = new WebSocket(wsUrl);
     
     ws.onmessage = (event) => {
