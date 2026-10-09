@@ -275,6 +275,7 @@ class DashboardResponse(BaseModel):
     progress: List[ProgressItem]
     progress_percentage: float
     has_phases: bool = False
+    active_phase_name: Optional[str] = None
     current_streak: int = 0
     longest_streak: int = 0
     badges: List[BadgeResponseItem] = Field(default_factory=list)

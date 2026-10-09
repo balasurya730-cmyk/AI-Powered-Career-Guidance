@@ -36,6 +36,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderCareer(data.selected_career);
     renderProgressSummary(data.progress_percentage, data.progress);
     renderPlanOverview(data.learning_plan);
+    if (data.has_phases && data.active_phase_name) {
+      document.getElementById("learningPlanHeader").textContent = "Active Phase: " + data.active_phase_name;
+    } else {
+      document.getElementById("learningPlanHeader").textContent = "Your Learning Plan";
+    }
+
     renderTasks(data.progress);
     updateCongratsCard(data);
     renderStreaksAndBadges(data);

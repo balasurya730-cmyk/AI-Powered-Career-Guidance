@@ -1556,7 +1556,7 @@ def get_dashboard(user_id: int = Depends(get_current_user_id)):
             
             # Predictive off-track alert based on low progress but nearing phase end
             cur.execute("""
-                SELECT ph.end_date FROM phases ph 
+                SELECT ph.end_date, ph.phase_name FROM phases ph 
                 WHERE ph.learning_plan_id = ? AND ph.status = 'active'
             """, (plan_id,))
             active_phase = cur.fetchone()
@@ -1605,10 +1605,13 @@ def get_dashboard(user_id: int = Depends(get_current_user_id)):
 
     conn.close()
 
+    active_phase_name = active_phase["phase_name"] if has_phases and active_phase else None
+
     return DashboardResponse(
         profile=profile, selected_career=selected_career, learning_plan=learning_plan,
         progress=progress_items, progress_percentage=progress_percentage,
-        has_phases=has_phases, current_streak=current_streak, longest_streak=longest_streak,
+        has_phases=has_phases, active_phase_name=active_phase_name,
+        current_streak=current_streak, longest_streak=longest_streak,
         badges=badges, student_code=student_code, time_to_job_weeks=time_to_job_weeks,
         off_track_alerts=off_track_alerts
     )
