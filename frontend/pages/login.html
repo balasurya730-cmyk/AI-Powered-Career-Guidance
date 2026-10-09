@@ -111,7 +111,7 @@
         body: { credential: response.credential },
         skipAuth: true
       });
-      Auth.setSession(result.access_token, { id: result.user_id, name: result.name, email: result.email });
+      Auth.setSession({ id: result.user_id, name: result.name, email: result.email });
       window.location.href = "dashboard.html";
     } catch (err) {
       const errorBanner = document.getElementById('errorBanner');
@@ -123,7 +123,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       const config = await apiRequest('/api/config', { skipAuth: true });
-      if (config && config.google_client_id && config.google_client_id !== "YOUR_GOOGLE_CLIENT_ID_HERE") {
+      if (config && config.google_client_id && config.google_client_id !== "YOUR_GOOGLE_CLIENT_ID_HERE" && config.google_client_id !== "your_google_client_id_here") {
         
         function initGoogle() {
           if (typeof google === 'undefined' || !google.accounts) {

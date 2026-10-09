@@ -1773,7 +1773,7 @@ def _activate_phase(cur, phase_row):
         
     # 4. Project Brief
     if project_brief:
-        due = start + timedelta(weeks=phase_row.get("duration_weeks", 4))
+        due = start + timedelta(weeks=phase_dict.get("duration_weeks", 4))
         cur.execute("""
             INSERT INTO progress (user_id, learning_plan_id, task_name, task_type, phase_id, due_date, status)
             VALUES (?, ?, ?, 'project', ?, ?, 'available')
