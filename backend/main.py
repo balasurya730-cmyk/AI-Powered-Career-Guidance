@@ -159,6 +159,7 @@ def send_email_alert(to_email: str, subject: str, body: str) -> bool:
 @app.post("/api/register", response_model=TokenResponse, tags=["Auth"])
 def register(payload: RegisterRequest, response: Response):
     """Create a new account. Emails must be unique."""
+    payload.email = payload.email.lower().strip()
     conn = get_connection()
     cur = conn.cursor()
 
@@ -192,6 +193,7 @@ def register(payload: RegisterRequest, response: Response):
 @app.post("/api/login", response_model=TokenResponse, tags=["Auth"])
 def login(payload: LoginRequest, response: Response):
     """Verify email + password, set an HTTP-only session cookie."""
+    payload.email = payload.email.lower().strip()
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("SELECT id, name, email, password_hash FROM users WHERE email = ?", (payload.email,))
@@ -232,6 +234,7 @@ def google_auth(payload: GoogleAuthRequest, response: Response):
         if not email:
             raise HTTPException(status_code=400, detail="Google token did not contain an email.")
 
+        email = email.lower().strip()
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("SELECT id, name, email FROM users WHERE email = ?", (email,))
@@ -435,6 +438,7 @@ def forgot_password(payload: ForgotPasswordRequest):
     emailed. If not, the link is returned directly in the response so the
     flow still works for local/dev use without an SMTP provider set up.
     """
+    payload.email = payload.email.lower().strip()
     generic_message = "If an account exists for that email, a password reset link has been sent."
 
     conn = get_connection()
