@@ -1533,6 +1533,8 @@ def get_dashboard(user_id: int = Depends(get_current_user_id)):
         cur.execute("SELECT SUM(duration_weeks) as total_weeks, COUNT(*) as count FROM phases WHERE learning_plan_id = ?", (plan_id,))
         phase_stats = cur.fetchone()
         has_phases = phase_stats["count"] > 0
+        
+        prog_rows = []
         if has_phases:
             time_to_job_weeks = phase_stats["total_weeks"]
 
@@ -1543,6 +1545,7 @@ def get_dashboard(user_id: int = Depends(get_current_user_id)):
                 WHERE p.learning_plan_id = ? AND ph.status = 'active'
                 ORDER BY p.id
             """, (plan_id,))
+            prog_rows = cur.fetchall()
             
             # Predict off-track alerts: Check if there are overdue tasks
             cur.execute("""
@@ -1573,8 +1576,8 @@ def get_dashboard(user_id: int = Depends(get_current_user_id)):
         else:
             # Show legacy tasks (phase_id is NULL)
             cur.execute("SELECT * FROM progress WHERE learning_plan_id = ? AND phase_id IS NULL ORDER BY id", (plan_id,))
+            prog_rows = cur.fetchall()
 
-        prog_rows = cur.fetchall()
         progress_items = [{
             "id": p["id"], "task_name": p["task_name"], "task_type": p["task_type"],
             "is_completed": bool(p["is_completed"]),
