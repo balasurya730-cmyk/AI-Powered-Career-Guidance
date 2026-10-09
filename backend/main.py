@@ -1737,10 +1737,11 @@ def _activate_phase(cur, phase_row):
     due dates spread one-per-week across the phase, and flips its status to
     'active'. Called when a phase first becomes reachable.
     """
-    weekly_tasks = json.loads(phase_row.get("weekly_tasks") or "[]")
-    daily_habits = json.loads(phase_row.get("daily_habits") or "[]")
-    monthly_milestone = phase_row.get("monthly_milestone")
-    project_brief = phase_row.get("project_brief")
+    phase_dict = dict(phase_row)
+    weekly_tasks = json.loads(phase_dict.get("weekly_tasks") or "[]")
+    daily_habits = json.loads(phase_dict.get("daily_habits") or "[]")
+    monthly_milestone = phase_dict.get("monthly_milestone")
+    project_brief = phase_dict.get("project_brief")
     
     start = datetime.utcnow().date()
     
