@@ -240,7 +240,10 @@
   <p style="color: #4a6058; font-size: 1.1rem; line-height: 1.6; margin-bottom: 30px;">
     You haven't earned a Certificate of Completion for this trail. Complete all your learning phases and pass their respective tests to unlock your certificate.
   </p>
-  <a href="phases.html" class="btn btn-primary" style="padding: 12px 30px; font-size: 1rem;">Go to Roadmap</a>
+  <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+    <a href="phases.html" class="btn btn-primary" style="padding: 12px 30px; font-size: 1rem;">Go to Roadmap</a>
+    <button onclick="window.showSampleCertificate()" class="btn btn-secondary" style="padding: 12px 30px; font-size: 1rem; border: 1px solid #e1e8e5; background: #fff; color: #12211D; cursor: pointer; border-radius: 4px;">Download Sample</button>
+  </div>
 </div>
 
 <script src="js/api.js"></script>
@@ -257,6 +260,19 @@
     const showNoCert = () => {
       certWrapper.style.display = "none";
       noCertMessage.style.display = "block";
+    };
+
+    window.showSampleCertificate = () => {
+      document.getElementById("studentName").textContent = "John Doe (Sample)";
+      document.getElementById("careerGoal").textContent = "Full Stack Developer";
+      document.getElementById("completedDate").textContent = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById("verificationCode").textContent = "SAMPLE-CERT-123456";
+      
+      certWrapper.style.display = "block";
+      noCertMessage.style.display = "none";
+      
+      // Auto trigger the print dialog for saving as PDF
+      setTimeout(() => window.print(), 500);
     };
     
     try {
